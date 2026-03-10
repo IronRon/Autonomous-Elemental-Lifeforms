@@ -3,7 +3,7 @@
 ## Project Proposal
 
 ### Project Title
-**Aether Swarm: Autonomous Elemental Lifeforms**
+**Autonomous Elemental Lifeforms**
 
 ---
 
