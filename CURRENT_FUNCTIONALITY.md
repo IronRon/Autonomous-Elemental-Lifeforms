@@ -60,6 +60,16 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - Uses configurable formation distances (`formation_offset_x`, `formation_offset_z`).
 - If leader is removed/invalid, follower drops formation and returns to default wander.
 
+### Evolution / Merge (Implemented)
+- Leader-driven merge: when a `leader` has two occupied follower slots and all three
+  are level 1 and the same element, the leader spawns a single level-2 lifeform and
+  removes the three originals.
+- Merge is checked on a configurable interval (`merge_check_interval`, default 5s)
+  to avoid per-frame checks.
+- Visual differentiation: level-1 uses a `SphereMesh`; level-2 uses a `BoxMesh`.
+- Spawned level-2 defaults: `size_multiplier = 1.5`, `speed_multiplier = 0.8`,
+  `strength = 1.2`. These are configurable per instance after merge.
+
 ## `OffsetPursue` Role in Formation
 - Follower tracks a local offset around leader and arrives toward predicted target position.
 - Custom offset mode is enabled by brain for formation slots.

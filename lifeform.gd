@@ -29,6 +29,7 @@ var _dynamic_material: StandardMaterial3D
 func _ready() -> void:
 	super._ready()
 	_apply_configuration()
+	_update_mesh_for_level()
 	_sync_stats_node()
 
 
@@ -41,6 +42,7 @@ func set_element_type(value: ElementType) -> void:
 func set_level(value: int) -> void:
 	level = max(1, value)
 	_apply_configuration()
+	_update_mesh_for_level()
 
 
 func set_visual_color(value: Color) -> void:
@@ -108,3 +110,15 @@ func _color_for_element(value: ElementType) -> Color:
 			return Color(0, 0, 0)
 		_:
 			return Color(1, 0.3019608, 1, 1)
+
+
+func _update_mesh_for_level() -> void:
+	# Swap mesh based on level: sphere for level 1, cube for level 2+.
+	if visual == null:
+		return
+	
+	if level >= 2:
+		visual.mesh = BoxMesh.new()
+	else:
+		visual.mesh = SphereMesh.new()
+	# Material override persists across mesh swap, preserving albedo color.

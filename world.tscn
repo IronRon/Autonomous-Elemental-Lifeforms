@@ -49,15 +49,16 @@ mesh = SubResource("BoxMesh_f3sb7")
 shape = SubResource("BoxShape3D_fj7yv")
 
 [node name="Lifeform2" parent="." unique_id=776330717 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26973248, 7.577716, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
-
-[node name="ObserverCamera" type="Camera3D" parent="." unique_id=1100823712]
-transform = Transform3D(0.965926, -0.0348995, 0.256819, 0, 0.990268, 0.139173, -0.259182, -0.13443, 0.95653, 0, 8, 18)
-current = true
-script = ExtResource("2_5b6x8")
 
 [node name="Lifeform3" parent="." unique_id=1362573189 instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.488021, 0.7276645, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
+
+[node name="ObserverCamera" type="Camera3D" parent="." unique_id=1100823712]
+transform = Transform3D(0.96583503, -0.035993703, 0.25664586, 0, 0.99030817, 0.1388873, -0.2591576, -0.13414223, 0.9564743, 0, 8, 18)
+current = true
+script = ExtResource("2_5b6x8")
