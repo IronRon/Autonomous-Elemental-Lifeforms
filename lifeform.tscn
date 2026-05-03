@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://bwe633aj3hp8m"]
+
+[ext_resource type="Script" uid="uid://028eyrysb6qq" path="res://lifeform.gd" id="1_hokl5"]
+[ext_resource type="Script" uid="uid://ci8facjqq07ft" path="res://behaviors/constrain.gd" id="3_aengs"]
+[ext_resource type="Script" uid="uid://s5pb8njisohn" path="res://behaviors/avoidance.gd" id="4_yugsa"]
+[ext_resource type="Script" uid="uid://cbrc3unamm5q3" path="res://behaviors/Flee.gd" id="5_ndjnu"]
+[ext_resource type="Script" uid="uid://wtnjsmv3y8y2" path="res://behaviors/pursue.gd" id="6_2f8je"]
+[ext_resource type="Script" uid="uid://c2d7mphmtn1jv" path="res://behaviors/seek.gd" id="7_4csf1"]
+[ext_resource type="Script" uid="uid://bn4xj07get8k6" path="res://behaviors/arrive.gd" id="8_ttbyj"]
+[ext_resource type="Script" uid="uid://baw56rnhj0aqm" path="res://behaviors/wander.gd" id="9_wjors"]
+[ext_resource type="Script" uid="uid://h5wrviq7ex0m" path="res://behaviors/offset_pursue.gd" id="10_8xgk2"]
+[ext_resource type="Script" uid="uid://dnntj3csepgtt" path="res://lifeform_brain.gd" id="10_utol8"]
+[ext_resource type="Script" uid="uid://c6pi6b3oupr8l" path="res://lifeform_stats.gd" id="11_sqh1m"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_x6ac5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sqh1m"]
+albedo_color = Color(1, 0.3019608, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_piivp"]
+albedo_color = Color(1, 0.3019608, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_bdxpo"]
+material = SubResource("StandardMaterial3D_piivp")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_cxs1n"]
+radius = 10.0
+
+[node name="Lifeform" type="CharacterBody3D" unique_id=2104863254]
+script = ExtResource("1_hokl5")
+mass = 1.0
+max_speed = 1.0
+metadata/_custom_type_script = "uid://cmw6n17mebkcx"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=749505881]
+shape = SubResource("SphereShape3D_x6ac5")
+
+[node name="Visual" type="MeshInstance3D" parent="." unique_id=158636613]
+material_override = SubResource("StandardMaterial3D_sqh1m")
+mesh = SubResource("SphereMesh_bdxpo")
+
+[node name="DetectionArea" type="Area3D" parent="." unique_id=1001689684]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea" unique_id=625925774]
+shape = SubResource("SphereShape3D_cxs1n")
+
+[node name="LifeformBrain" type="Node" parent="." unique_id=797649179]
+script = ExtResource("10_utol8")
+
+[node name="Constrain" type="Node" parent="." unique_id=1986950636]
+script = ExtResource("3_aengs")
+enabled = false
+metadata/_custom_type_script = "uid://ci8facjqq07ft"
+
+[node name="Avoidance" type="Node" parent="." unique_id=495076555]
+script = ExtResource("4_yugsa")
+enabled = false
+metadata/_custom_type_script = "uid://s5pb8njisohn"
+
+[node name="Flee" type="Node" parent="." unique_id=1098532233]
+script = ExtResource("5_ndjnu")
+enabled = false
+metadata/_custom_type_script = "uid://cbrc3unamm5q3"
+
+[node name="Pursue" type="Node" parent="." unique_id=129754745]
+script = ExtResource("6_2f8je")
+enabled = false
+metadata/_custom_type_script = "uid://wtnjsmv3y8y2"
+
+[node name="Seek" type="Node" parent="." unique_id=1678316504]
+script = ExtResource("7_4csf1")
+enabled = false
+metadata/_custom_type_script = "uid://c2d7mphmtn1jv"
+
+[node name="Arrive" type="Node" parent="." unique_id=2131381815]
+script = ExtResource("8_ttbyj")
+enabled = false
+metadata/_custom_type_script = "uid://bn4xj07get8k6"
+
+[node name="Wander" type="Node" parent="." unique_id=1893359678]
+script = ExtResource("9_wjors")
+enabled = false
+metadata/_custom_type_script = "uid://baw56rnhj0aqm"
+
+[node name="OffsetPursue" type="Node" parent="." unique_id=1893359680]
+script = ExtResource("10_8xgk2")
+enabled = false
+metadata/_custom_type_script = "uid://h5wrviq7ex0m"
+
+[node name="LifeformStats" type="Node" parent="." unique_id=1902007610]
+script = ExtResource("11_sqh1m")

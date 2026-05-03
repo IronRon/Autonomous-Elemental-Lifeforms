@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://cv7uiwro17rqg"]
+
+[ext_resource type="PackedScene" uid="uid://bwe633aj3hp8m" path="res://lifeform.tscn" id="1_f3sb7"]
+[ext_resource type="Script" uid="uid://ddpkfx1exnwk6" path="res://camera_free_fly.gd" id="2_5b6x8"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fj7yv"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_tlwt5"]
+sky_material = SubResource("ProceduralSkyMaterial_fj7yv")
+
+[sub_resource type="Environment" id="Environment_aqk2v"]
+background_mode = 2
+sky = SubResource("Sky_tlwt5")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_f3sb7"]
+size = Vector3(10, 1, 50)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fj7yv"]
+
+[node name="World" type="Node3D" unique_id=1071105224]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1478717956]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1881590330]
+environment = SubResource("Environment_aqk2v")
+
+[node name="Lifeform" parent="." unique_id=2104863254 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 2.7224388, 0)
+element_type = 4
+visual_color = Color(0, 0, 0, 1)
+
+[node name="Camera3D" type="Camera3D" parent="Lifeform" unique_id=69344667]
+transform = Transform3D(-0.33758903, -0.31285325, 0.8877818, 0.10624124, 0.9244601, 0.366178, -0.93527883, 0.21793671, -0.2788497, 12.816925, 5.65815, 2.0963044)
+visible = false
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1516433844]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=167696379]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27.762556, 0, 0)
+mesh = SubResource("BoxMesh_f3sb7")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=799303189]
+shape = SubResource("BoxShape3D_fj7yv")
+
+[node name="Lifeform2" parent="." unique_id=776330717 instance=ExtResource("1_f3sb7")]
+element_type = 4
+visual_color = Color(0, 0, 0, 1)
+
+[node name="ObserverCamera" type="Camera3D" parent="." unique_id=1100823712]
+transform = Transform3D(0.965926, -0.0348995, 0.256819, 0, 0.990268, 0.139173, -0.259182, -0.13443, 0.95653, 0, 8, 18)
+current = true
+script = ExtResource("2_5b6x8")
+
+[node name="Lifeform3" parent="." unique_id=1362573189 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.488021, 0.7276645, 0)
+element_type = 4
+visual_color = Color(0, 0, 0, 1)
