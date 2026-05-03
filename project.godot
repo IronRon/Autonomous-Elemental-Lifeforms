@@ -27,6 +27,7 @@ driver/enable_input=true
 
 XRToolsUserSettings="*uid://bqgb8i74tm0t"
 XRToolsRumbleManager="*uid://by853dk86g1qw"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug_draw_3d]
 
@@ -34,7 +35,7 @@ settings/addon_root_folder="res://addons/debug_draw_3d"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot-xr-tools/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot-xr-tools/plugin.cfg", "res://addons/godot_ai/plugin.cfg")
 
 [global_group]
 
