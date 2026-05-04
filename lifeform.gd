@@ -34,14 +34,29 @@ var is_dead: bool = false
 
 
 var _dynamic_material: StandardMaterial3D
+var _face_material: StandardMaterial3D
+var _accessory_material: StandardMaterial3D
 @onready var visual: MeshInstance3D = $Visual
 @onready var stats_node: Node = $LifeformStats
+@onready var left_eye: MeshInstance3D = $Visual/LeftEye
+@onready var right_eye: MeshInstance3D = $Visual/RightEye
+@onready var mouth: MeshInstance3D = $Visual/Mouth
+@onready var fire_crest: MeshInstance3D = $Visual/FireCrest
+@onready var wind_wing_left: MeshInstance3D = $Visual/WindWingLeft
+@onready var wind_wing_right: MeshInstance3D = $Visual/WindWingRight
+@onready var water_drop: MeshInstance3D = $Visual/WaterDrop
+@onready var earth_pebble_left: MeshInstance3D = $Visual/EarthPebbleLeft
+@onready var earth_pebble_right: MeshInstance3D = $Visual/EarthPebbleRight
+@onready var anti_horn_left: MeshInstance3D = $Visual/AntiHornLeft
+@onready var anti_horn_right: MeshInstance3D = $Visual/AntiHornRight
 
 
 func _ready() -> void:
 	super._ready()
 	_apply_configuration()
 	_update_mesh_for_level()
+	_update_face()
+	_update_accessories()
 	_sync_stats_node()
 
 	# Apply configured detection radii to area collision shapes.
@@ -61,12 +76,16 @@ func set_element_type(value: ElementType) -> void:
 	element_type = value
 	visual_color = _color_for_element(value)
 	_apply_configuration()
+	_update_face()
+	_update_accessories()
 
 
 func set_level(value: int) -> void:
 	level = max(1, value)
 	_apply_configuration()
 	_update_mesh_for_level()
+	_update_face()
+	_update_accessories()
 	_update_attack_stats()
 
 
@@ -219,6 +238,8 @@ func _apply_configuration() -> void:
 		visual.material_override = _dynamic_material
 		_dynamic_material.albedo_color = visual_color
 
+	_update_face()
+	_update_accessories()
 	_sync_stats_node()
 
 
@@ -262,3 +283,265 @@ func _update_mesh_for_level() -> void:
 			capsule.height = 1.8
 			visual.mesh = capsule
 	# Material override persists across mesh swap, preserving albedo color.
+
+
+func _update_face() -> void:
+	if not is_inside_tree():
+		return
+	if left_eye == null:
+		left_eye = get_node_or_null("Visual/LeftEye")
+	if right_eye == null:
+		right_eye = get_node_or_null("Visual/RightEye")
+	if mouth == null:
+		mouth = get_node_or_null("Visual/Mouth")
+	if left_eye == null or right_eye == null or mouth == null:
+		return
+
+	var show_face = level == 1
+	left_eye.visible = show_face
+	right_eye.visible = show_face
+	mouth.visible = show_face
+	if not show_face:
+		return
+
+	_apply_face_material(_face_color_for_element())
+
+	match element_type:
+		ElementType.Fire:
+			_apply_face_layout(
+				Vector3(-0.14, 0.24, 0.49),
+				Vector3(0.14, 0.24, 0.49),
+				Vector3(0.0, -0.08, 0.50),
+				Vector3(1.35, 0.6, 0.9),
+				Vector3(1.35, 0.6, 0.9),
+				Vector3(1.25, 0.75, 1.0),
+				deg_to_rad(-12.0),
+				deg_to_rad(12.0),
+				deg_to_rad(92.0)
+			)
+		ElementType.Wind:
+			_apply_face_layout(
+				Vector3(-0.18, 0.24, 0.49),
+				Vector3(0.18, 0.24, 0.49),
+				Vector3(0.0, -0.06, 0.50),
+				Vector3(1.15, 1.2, 1.0),
+				Vector3(1.15, 1.2, 1.0),
+				Vector3(1.55, 0.85, 1.0),
+				deg_to_rad(8.0),
+				deg_to_rad(-8.0),
+				deg_to_rad(100.0)
+			)
+		ElementType.Water:
+			_apply_face_layout(
+				Vector3(-0.14, 0.17, 0.49),
+				Vector3(0.14, 0.17, 0.49),
+				Vector3(0.0, -0.12, 0.50),
+				Vector3(1.0, 0.8, 1.0),
+				Vector3(1.0, 0.8, 1.0),
+				Vector3(1.35, 0.7, 1.0),
+				deg_to_rad(0.0),
+				deg_to_rad(0.0),
+				deg_to_rad(82.0)
+			)
+		ElementType.Earth:
+			_apply_face_layout(
+				Vector3(-0.12, 0.13, 0.49),
+				Vector3(0.12, 0.13, 0.49),
+				Vector3(0.0, -0.13, 0.50),
+				Vector3(1.2, 0.75, 1.0),
+				Vector3(1.2, 0.75, 1.0),
+				Vector3(1.65, 0.65, 1.0),
+				deg_to_rad(0.0),
+				deg_to_rad(0.0),
+				deg_to_rad(90.0)
+			)
+		ElementType.AntiMagic:
+			_apply_face_layout(
+				Vector3(-0.13, 0.23, 0.49),
+				Vector3(0.13, 0.23, 0.49),
+				Vector3(0.0, -0.09, 0.50),
+				Vector3(1.45, 0.55, 1.0),
+				Vector3(1.45, 0.55, 1.0),
+				Vector3(1.15, 0.7, 1.0),
+				deg_to_rad(18.0),
+				deg_to_rad(-18.0),
+				deg_to_rad(70.0)
+			)
+
+
+func _apply_face_layout(
+	left_pos: Vector3,
+	right_pos: Vector3,
+	mouth_pos: Vector3,
+	left_scale: Vector3,
+	right_scale: Vector3,
+	mouth_scale: Vector3,
+	left_roll: float,
+	right_roll: float,
+	mouth_roll: float
+) -> void:
+	left_eye.position = left_pos
+	right_eye.position = right_pos
+	mouth.position = mouth_pos
+	left_eye.rotation = Vector3(0.0, 0.0, left_roll)
+	right_eye.rotation = Vector3(0.0, 0.0, right_roll)
+	mouth.rotation = Vector3(0.0, 0.0, mouth_roll)
+	left_eye.scale = left_scale
+	right_eye.scale = right_scale
+	mouth.scale = mouth_scale
+
+
+func _apply_face_material(color: Color) -> void:
+	if _face_material == null:
+		_face_material = StandardMaterial3D.new()
+		_face_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	left_eye.material_override = _face_material
+	right_eye.material_override = _face_material
+	mouth.material_override = _face_material
+	_face_material.albedo_color = color
+	_face_material.emission_enabled = element_type == ElementType.AntiMagic
+	_face_material.emission = color
+	_face_material.emission_energy_multiplier = 0.8
+
+
+func _face_color_for_element() -> Color:
+	if element_type == ElementType.AntiMagic:
+		return Color(0.75, 0.0, 1.0)
+	return Color.BLACK
+
+
+func _update_accessories() -> void:
+	if not is_inside_tree():
+		return
+	_cache_accessory_nodes()
+	var accessories = _get_accessory_nodes()
+	for accessory in accessories:
+		if accessory:
+			accessory.visible = false
+	if level != 1:
+		return
+
+	_apply_accessory_material(_accessory_color_for_element())
+
+	match element_type:
+		ElementType.Fire:
+			_show_accessory(
+				fire_crest,
+				Vector3(0.0, 0.58, 0.02),
+				Vector3(deg_to_rad(-12.0), 0.0, 0.0),
+				Vector3(1.0, 1.25, 0.9)
+			)
+		ElementType.Wind:
+			_show_accessory(
+				wind_wing_left,
+				Vector3(-0.46, 0.02, 0.02),
+				Vector3(0.0, 0.0, deg_to_rad(35.0)),
+				Vector3(1.0, 1.0, 1.0)
+			)
+			_show_accessory(
+				wind_wing_right,
+				Vector3(0.46, 0.02, 0.02),
+				Vector3(0.0, 0.0, deg_to_rad(-35.0)),
+				Vector3(1.0, 1.0, 1.0)
+			)
+		ElementType.Water:
+			_show_accessory(
+				water_drop,
+				Vector3(0.0, 0.55, 0.04),
+				Vector3.ZERO,
+				Vector3(0.85, 1.35, 0.85)
+			)
+		ElementType.Earth:
+			_show_accessory(
+				earth_pebble_left,
+				Vector3(-0.22, 0.48, 0.02),
+				Vector3(deg_to_rad(15.0), deg_to_rad(0.0), deg_to_rad(18.0)),
+				Vector3(1.0, 0.8, 0.9)
+			)
+			_show_accessory(
+				earth_pebble_right,
+				Vector3(0.22, 0.48, 0.02),
+				Vector3(deg_to_rad(-10.0), deg_to_rad(0.0), deg_to_rad(-15.0)),
+				Vector3(0.85, 0.95, 0.9)
+			)
+		ElementType.AntiMagic:
+			_show_accessory(
+				anti_horn_left,
+				Vector3(-0.23, 0.47, 0.04),
+				Vector3(deg_to_rad(-20.0), 0.0, deg_to_rad(22.0)),
+				Vector3(1.0, 1.1, 1.0)
+			)
+			_show_accessory(
+				anti_horn_right,
+				Vector3(0.23, 0.47, 0.04),
+				Vector3(deg_to_rad(-20.0), 0.0, deg_to_rad(-22.0)),
+				Vector3(1.0, 1.1, 1.0)
+			)
+
+
+func _cache_accessory_nodes() -> void:
+	if fire_crest == null:
+		fire_crest = get_node_or_null("Visual/FireCrest")
+	if wind_wing_left == null:
+		wind_wing_left = get_node_or_null("Visual/WindWingLeft")
+	if wind_wing_right == null:
+		wind_wing_right = get_node_or_null("Visual/WindWingRight")
+	if water_drop == null:
+		water_drop = get_node_or_null("Visual/WaterDrop")
+	if earth_pebble_left == null:
+		earth_pebble_left = get_node_or_null("Visual/EarthPebbleLeft")
+	if earth_pebble_right == null:
+		earth_pebble_right = get_node_or_null("Visual/EarthPebbleRight")
+	if anti_horn_left == null:
+		anti_horn_left = get_node_or_null("Visual/AntiHornLeft")
+	if anti_horn_right == null:
+		anti_horn_right = get_node_or_null("Visual/AntiHornRight")
+
+
+func _get_accessory_nodes() -> Array:
+	return [
+		fire_crest,
+		wind_wing_left,
+		wind_wing_right,
+		water_drop,
+		earth_pebble_left,
+		earth_pebble_right,
+		anti_horn_left,
+		anti_horn_right
+	]
+
+
+func _show_accessory(accessory: MeshInstance3D, pos: Vector3, rot: Vector3, accessory_scale: Vector3) -> void:
+	if accessory == null:
+		return
+	accessory.visible = true
+	accessory.position = pos
+	accessory.rotation = rot
+	accessory.scale = accessory_scale
+	accessory.material_override = _accessory_material
+
+
+func _apply_accessory_material(color: Color) -> void:
+	if _accessory_material == null:
+		_accessory_material = StandardMaterial3D.new()
+		_accessory_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	_accessory_material.albedo_color = color
+	_accessory_material.emission_enabled = element_type == ElementType.Fire or element_type == ElementType.AntiMagic
+	_accessory_material.emission = color
+	_accessory_material.emission_energy_multiplier = 0.45
+
+
+func _accessory_color_for_element() -> Color:
+	match element_type:
+		ElementType.Fire:
+			return Color(1.0, 0.35, 0.02)
+		ElementType.Wind:
+			return Color(0.65, 1.0, 0.55)
+		ElementType.Water:
+			return Color(0.2, 0.7, 1.0)
+		ElementType.Earth:
+			return Color(0.35, 0.22, 0.12)
+		ElementType.AntiMagic:
+			return Color(0.35, 0.0, 0.5)
+		_:
+			return visual_color

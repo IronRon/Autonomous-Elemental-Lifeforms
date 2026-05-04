@@ -19,6 +19,53 @@ albedo_color = Color(1, 0.3019608, 1, 1)
 
 [sub_resource type="SphereMesh" id="SphereMesh_aengs"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yugsa"]
+albedo_color = Color(0, 0, 0, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_aengs"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_yugsa"]
+material = SubResource("StandardMaterial3D_aengs")
+radius = 0.05
+height = 0.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ndjnu"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_2f8je"]
+material = SubResource("StandardMaterial3D_ndjnu")
+radius = 0.05
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2f8je"]
+albedo_color = Color(1, 0.35, 0.02, 1)
+emission_enabled = true
+emission = Color(1, 0.35, 0.02, 1)
+emission_energy_multiplier = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_face_fire"]
+top_radius = 0.02
+bottom_radius = 0.08
+height = 0.28
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_face_wind"]
+radius = 0.035
+height = 0.32
+
+[sub_resource type="SphereMesh" id="SphereMesh_face_water"]
+radius = 0.08
+height = 0.16
+
+[sub_resource type="BoxMesh" id="BoxMesh_face_earth"]
+size = Vector3(0.13, 0.13, 0.13)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_face_horn"]
+top_radius = 0.015
+bottom_radius = 0.06
+height = 0.22
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_cxs1n"]
 radius = 10.0
 
@@ -43,6 +90,54 @@ shape = SubResource("SphereShape3D_x6ac5")
 [node name="Visual" type="MeshInstance3D" parent="." unique_id=158636613]
 material_override = SubResource("StandardMaterial3D_sqh1m")
 mesh = SubResource("SphereMesh_aengs")
+
+[node name="LeftEye" type="MeshInstance3D" parent="Visual" unique_id=654054965]
+transform = Transform3D(1.3204993, 0.12474702, 0, -0.2806808, 0.5868886, 0, 0, 0, 0.9, -0.14, 0.24, 0.49)
+material_override = SubResource("StandardMaterial3D_yugsa")
+mesh = SubResource("SphereMesh_yugsa")
+
+[node name="RightEye" type="MeshInstance3D" parent="Visual" unique_id=1552292069]
+transform = Transform3D(1.3204993, -0.12474702, 0, 0.2806808, 0.5868886, 0, 0, 0, 0.9, 0.14, 0.24, 0.49)
+material_override = SubResource("StandardMaterial3D_yugsa")
+mesh = SubResource("SphereMesh_yugsa")
+
+[node name="Mouth" type="MeshInstance3D" parent="Visual" unique_id=1793327591]
+transform = Transform3D(-0.043624327, -0.74954313, 0, 1.2492385, -0.026174597, 0, 0, 0, 1, 0, -0.08, 0.5)
+material_override = SubResource("StandardMaterial3D_yugsa")
+mesh = SubResource("CapsuleMesh_2f8je")
+
+[node name="FireCrest" type="MeshInstance3D" parent="Visual" unique_id=830513020]
+transform = Transform3D(1, 0, 0, 0, 1.2226845, 0.18712053, 0, -0.25988963, 0.8803328, 0, 0.58, 0.02)
+material_override = SubResource("StandardMaterial3D_2f8je")
+mesh = SubResource("CylinderMesh_face_fire")
+
+[node name="WindWingLeft" type="MeshInstance3D" parent="Visual" unique_id=347394143]
+visible = false
+mesh = SubResource("CapsuleMesh_face_wind")
+
+[node name="WindWingRight" type="MeshInstance3D" parent="Visual" unique_id=1876184922]
+visible = false
+mesh = SubResource("CapsuleMesh_face_wind")
+
+[node name="WaterDrop" type="MeshInstance3D" parent="Visual" unique_id=937793591]
+visible = false
+mesh = SubResource("SphereMesh_face_water")
+
+[node name="EarthPebbleLeft" type="MeshInstance3D" parent="Visual" unique_id=1778626684]
+visible = false
+mesh = SubResource("BoxMesh_face_earth")
+
+[node name="EarthPebbleRight" type="MeshInstance3D" parent="Visual" unique_id=1971291626]
+visible = false
+mesh = SubResource("BoxMesh_face_earth")
+
+[node name="AntiHornLeft" type="MeshInstance3D" parent="Visual" unique_id=1914253203]
+visible = false
+mesh = SubResource("CylinderMesh_face_horn")
+
+[node name="AntiHornRight" type="MeshInstance3D" parent="Visual" unique_id=1350610874]
+visible = false
+mesh = SubResource("CylinderMesh_face_horn")
 
 [node name="DetectionArea" type="Area3D" parent="." unique_id=1001689684]
 
