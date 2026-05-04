@@ -8,12 +8,16 @@ var enemy_boid:Node
 var force = Vector3.ZERO
 
 func on_draw_gizmos():
+	if boid == null or not is_instance_valid(boid) or enemy_boid == null or not is_instance_valid(enemy_boid):
+		return
 	DebugDraw3D.draw_sphere(boid.global_transform.origin, flee_range, Color.DARK_SALMON)
 	
 	if force != Vector3.ZERO:
 		DebugDraw3D.draw_arrow(boid.global_transform.origin, enemy_boid.global_transform.origin, Color.DARK_SALMON)
 
 func calculate():
+	if boid == null or not is_instance_valid(boid) or enemy_boid == null or not is_instance_valid(enemy_boid):
+		return Vector3.ZERO
 	var to_enemy = enemy_boid.global_transform.origin - boid.global_transform.origin
 	DebugDraw2D.set_text("to_enemy", to_enemy.length())
 	if to_enemy.length() < flee_range:

@@ -18,13 +18,15 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 @export var speed_multiplier: float = 1.0:
 	set = set_speed_multiplier
 
-@export var base_max_speed: float = 1.0
+@export var base_max_speed: float = 3.0
 @export var base_mass: float = 1.0
 
 # Combat / resource stats
 @export var attack_energy: int = 1
 @export var max_attack_energy: int = 3
 @export var health: int = 2
+@export var collision_impulse_strength: float = 4.0
+var is_dead: bool = false
 
 # Detection radii (meters)
 @export var social_detection_radius: float = 10.0
@@ -91,6 +93,85 @@ func add_attack_energy(amount: int) -> void:
 	# Gain attack energy from resource pickup (mana orbs).
 	# Clamped to [0, max_attack_energy].
 	attack_energy = clamp(attack_energy + amount, 0, max_attack_energy)
+
+
+func apply_damage(amount: int) -> bool:
+	# Returns true if this lifeform died from the hit.
+	if amount <= 0 or is_dead:
+		return false
+	health = max(0, health - amount)
+	print(self, " health: ", health, " amount: ", amount)
+	if health <= 0:
+		print(self, "Ye we dead", " health: ", health)
+		die()
+		return true
+	return false
+
+
+func resolve_collision_with(other: Boid) -> void:
+	# Resolve combat once per colliding pair.
+	# Only anti-magic vs non anti-magic contacts exchange damage in this step.
+	if is_dead:
+		return
+	if other == null or not is_instance_valid(other) or other == self:
+		return
+	if not (other is Boid):
+		return
+	if other.has_method("is_combat_active") and not other.is_combat_active():
+		return
+	if get_instance_id() > other.get_instance_id():
+		return
+	if element_type == other.element_type:
+		return
+	if element_type != ElementType.AntiMagic and other.element_type != ElementType.AntiMagic:
+		return
+
+	var was_dead_before = is_dead
+	if other.has_method("apply_damage"):
+		apply_damage(int(other.attack_energy))
+	if other.has_method("apply_damage") and not was_dead_before:
+		other.apply_damage(int(attack_energy))
+	_apply_collision_impulse(other)
+	if other.has_method("_apply_collision_impulse"):
+		other._apply_collision_impulse(self)
+
+
+func die() -> void:
+	# Clear references before removing this lifeform from the scene.
+	if is_dead:
+		return
+	is_dead = true
+	set_collision_layer_value(1, false)
+	set_collision_mask_value(1, false)
+	set_collision_layer_value(2, false)
+	set_collision_mask_value(2, false)
+	var all_lifeforms = get_tree().get_nodes_in_group("lifeforms")
+	for lifeform in all_lifeforms:
+		if lifeform == null or lifeform == self or not lifeform.has_node("LifeformBrain"):
+			continue
+		var brain = lifeform.get_node("LifeformBrain")
+		if brain and brain.has_method("clear_threat_reference"):
+			brain.clear_threat_reference(self)
+	var brain = get_node_or_null("LifeformBrain")
+	if brain and brain.has_method("on_lifeform_death"):
+		brain.on_lifeform_death()
+	queue_free()
+
+
+func is_combat_active() -> bool:
+	return not is_dead
+
+
+func _apply_collision_impulse(other: Boid) -> void:
+	# Push colliding lifeforms apart so combat has visible physical feedback.
+	if other == null or not is_instance_valid(other):
+		return
+	var offset = other.global_transform.origin - global_transform.origin
+	if offset == Vector3.ZERO:
+		offset = -global_transform.basis.z
+	var impulse = offset.normalized() * collision_impulse_strength
+	vel -= impulse
+	vel = vel.limit_length(max_speed * 1.5)
 
 
 

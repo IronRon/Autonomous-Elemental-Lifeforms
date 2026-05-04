@@ -148,6 +148,36 @@ func on_orb_picked(orb: Node) -> void:
 		_set_wander_mode()
 
 
+func clear_threat_reference(threat: Node) -> void:
+	# Called when a threat is freed so flee mode can release stale targets.
+	if current_threat == threat:
+		current_threat = null
+		var flee = boid.get_node_or_null("Flee")
+		if flee:
+			flee.enemy_boid = null
+		if current_mode == MODE_FLEE:
+			_set_wander_mode()
+
+
+func clear_prey_reference(prey: Node) -> void:
+	# Called when a prey is freed so pursuit mode can release stale targets.
+	if current_prey == prey:
+		current_prey = null
+		var pursue = boid.get_node_or_null("Pursue")
+		if pursue:
+			pursue.enemy_boid = null
+		if current_mode == MODE_PURSUE:
+			_set_wander_mode()
+
+
+func on_lifeform_death() -> void:
+	# Called when the lifeform this brain controls dies.
+	current_partner = null
+	leader_boid = null
+	current_threat = null
+	current_prey = null
+
+
 func _find_same_element_partner():
 	# Pick the nearest compatible non-follower in detection range.
 	var detection_area = boid.get_node_or_null("DetectionArea")

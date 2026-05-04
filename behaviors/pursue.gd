@@ -14,10 +14,14 @@ func _ready():
 		enemy_boid = get_node(enemy_node_path)
 		
 func _process(delta):
+	if boid == null or not is_instance_valid(boid) or enemy_boid == null or not is_instance_valid(enemy_boid):
+		return
 	if draw_gizmos:
 		DebugDraw3D.draw_arrow(boid.global_transform.origin, projected, Color.BISQUE, 0.1)
 
 func calculate():		
+	if boid == null or not is_instance_valid(boid) or enemy_boid == null or not is_instance_valid(enemy_boid):
+		return Vector3.ZERO
 	var to_enemy = enemy_boid.global_transform.origin - boid.global_transform.origin	
 	var dist = to_enemy.length()	
 	var time = dist / boid.max_speed	

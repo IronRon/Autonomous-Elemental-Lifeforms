@@ -14,6 +14,7 @@ var behaviors = []
 
 @export var draw_gizmos = true
 @export var pause = false
+@export var combat_collision_cooldown: float = 0.35
 
 var count_neighbors = false
 var neighbors = [] 
@@ -21,6 +22,7 @@ var neighbors = []
 var school = null
 var new_force = Vector3.ZERO
 var should_calculate = false
+var _combat_collision_cooldowns: Dictionary = {}
 
 func draw_gizmos_recursive(dg):
 	draw_gizmos = dg
@@ -174,6 +176,7 @@ func _physics_process(delta):
 	# lerp in the new forces
 	new_force = calculate()
 	force = lerp(force, new_force, delta)
+	_update_combat_collision_cooldowns(delta)
 	if ! pause:
 		acceleration = force / mass
 		vel += acceleration * delta
@@ -188,8 +191,74 @@ func _physics_process(delta):
 			
 			set_velocity(vel)
 			move_and_slide()
+			_resolve_combat_collisions()
 			
 			# Implement Banking as described:
 			# https://www.cs.toronto.edu/~dt/siggraph97-course/cwr87/
 			var temp_up = global_transform.basis.y.lerp(Vector3.UP + (acceleration * banking), delta)
 			look_at(global_transform.origin - vel.normalized(), temp_up)
+
+
+func _resolve_combat_collisions() -> void:
+	# Resolve close-contact combat once per pair after movement.
+	# Only anti-magic vs non anti-magic contacts exchange damage for now.
+	if not is_combat_active():
+		return
+	var collision_count = get_slide_collision_count()
+	if collision_count <= 0:
+		return
+
+	for i in range(collision_count):
+		var collision = get_slide_collision(i)
+		if collision == null:
+			continue
+
+		var other = collision.get_collider()
+		if other == null or not (other is Boid):
+			continue
+		if other == self:
+			continue
+		if other.has_method("is_combat_active") and not other.is_combat_active():
+			continue
+
+		# Process each pair only once to avoid double damage from both bodies.
+		if get_instance_id() > other.get_instance_id():
+			continue
+
+		var pair_key = _combat_pair_key(other)
+		if _combat_collision_cooldowns.get(pair_key, 0.0) > 0.0:
+			continue
+
+		resolve_collision_with(other)
+		_combat_collision_cooldowns[pair_key] = combat_collision_cooldown
+
+
+func resolve_collision_with(other: Boid) -> void:
+	# Default Boid implementation does nothing.
+	# Lifeform overrides this to apply combat damage.
+	pass
+
+
+func is_combat_active() -> bool:
+	# Base boids participate in combat unless a subclass disables it.
+	return true
+
+
+func _update_combat_collision_cooldowns(delta: float) -> void:
+	if _combat_collision_cooldowns.is_empty():
+		return
+	var expired_keys: Array = []
+	for key in _combat_collision_cooldowns.keys():
+		var remaining = float(_combat_collision_cooldowns[key]) - delta
+		if remaining <= 0.0:
+			expired_keys.append(key)
+		else:
+			_combat_collision_cooldowns[key] = remaining
+	for key in expired_keys:
+		_combat_collision_cooldowns.erase(key)
+
+
+func _combat_pair_key(other: Boid) -> String:
+	var first_id = min(get_instance_id(), other.get_instance_id())
+	var second_id = max(get_instance_id(), other.get_instance_id())
+	return str(first_id) + ":" + str(second_id)

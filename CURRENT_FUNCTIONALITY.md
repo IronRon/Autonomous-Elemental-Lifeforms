@@ -198,18 +198,82 @@ Pursuit or flee **exit immediately** if ANY of these conditions become true:
   - 1: flee only from strictly higher level.
   - -1: flee from all anti-magic (even lower level).
   
-#### Known Limitations (Pending Future Work)
+#### Freed Target Guards
 
-- **No Collision Damage Yet:** Pursuit/flee don't cause damage on collision; health stays unchanged.
-- **No Aggro Radius:** Prey can flee indefinitely; no "too close" counter-attack mechanic.
-- **No Attack Cooldown:** Anti-magic don't consume energy to attack (energy system is placeholder).
-- **No Death Mechanics:** Lifeforms don't die when health depletes; they persist until manually removed.
-- **No Combat Resolution:** No knockback, bounce, or energy drain on contact.
+To prevent crashes when a pursued or fleeing target is freed:
+- **`Flee.gd`** checks if `enemy_boid` is valid before dereferencing `global_transform`.
+  - Returns safely if target is already dead.
+  - Brain also clears the flee target via `clear_threat_reference()` when threat dies.
+- **`Pursue.gd`** checks if `enemy_boid` is valid before using it in calculations.
+  - Returns `Vector3.ZERO` if target is invalid.
+  - Brain clears the pursue target via `clear_prey_reference()` when prey dies.
+- When a lifeform dies, it notifies all other lifeforms to clear stale target references immediately.
+
+## Combat & Collision Resolution (Implemented)
+
+### How Collision Damage Works
+
+Combat damage is resolved using **slide collision detection** from `move_and_slide()`:
+
+1. **Per-Frame Collision Check:**
+   - After `move_and_slide()`, `Boid` calls `_resolve_combat_collisions()`.
+   - Iterates over all `get_slide_collision_count()` contacts.
+   - For each contact, calls `resolve_collision_with(other)` on the lower-instance lifeform.
+
+2. **Mutual Damage Exchange:**
+   - When an anti-magic and non-anti-magic lifeform collide:
+     - Both take damage equal to the **other's** `attack_energy`.
+     - Example: Anti (energy=1) hits Wind (energy=2):
+       - Anti takes 2 damage
+       - Wind takes 1 damage
+   - Both lifeforms must take damage in the same contact resolution, even if one dies.
+
+3. **Per-Pair Cooldown:**
+   - To prevent repeated damage from persistent contact, a cooldown dictionary tracks each pair.
+   - `combat_collision_cooldown` (export, default 0.35 seconds) sets the delay between successive hits.
+   - Same pair can only damage once every N seconds, even if still overlapping.
+
+4. **Dead State & Immediate Cleanup:**
+   - When a lifeform's `health` reaches 0, it calls `die()` immediately.
+   - `die()` sets `is_dead = true` before `queue_free()`.
+   - Dead lifeforms:
+     - Disable collision layers/masks so they stop participating in new collisions.
+     - Notify all other lifeforms to clear stale threat/prey references.
+     - Call `on_lifeform_death()` on their brain to release follower slots.
+   - This ensures dead bodies can't be damaged again or cause crashes.
+
+5. **Collision Impulse (Knockback):**
+   - On collision, both combatants receive a directional push away from each other.
+   - `collision_impulse_strength` (export, default 4.0) controls the force magnitude.
+   - Impulse is applied along the normalized direction between collision partners.
+   - Velocity is clamped to allow short burst speeds (up to `max_speed * 1.5`).
+
+### Combat Summary Example
+
+**Scenario:** Anti1 (health=2, energy=1) collides with Wind1 (health=2, energy=1)
+
+1. **Frame 1, First Collision:**
+   - Anti1 and Wind1 collide.
+   - Both take 1 damage: Anti1 health→1, Wind1 health→1.
+   - Both receive impulse pushing them apart.
+   - Cooldown is set for this pair: next damage in 0.35s.
+
+2. **Frame 2-11 (within 0.35s):**
+   - Pair remains in contact, but cooldown blocks repeated damage.
+   - Movement can bring them apart due to impulse.
+
+3. **Frame 12+ (after 0.35s):**
+   - If still colliding, damage resolves again.
+   - Both take 1 damage: Anti1 health→0 (dies), Wind1 health→0 (dies).
+   - Both become dead immediately:
+     - `is_dead=true` for both.
+     - Collision layers disabled for both.
+     - Brain cleanup called for both.
+   - Both are queued for freeing, but dead state prevents further collisions/damage.
 
 ## What Is Not Implemented Yet
-- Combat resolution / predator-prey outcomes (using energy vs health)
-- Aggro radius and flee→pursue counter-attack transition (when predator too close)
-- Collision-based damage application and knockback physics
-- Health depletion and death (queue_free when health <= 0)
-- Simulation manager for spawning and faction counts
-- HUD / debug visualization of energy and stats
+
+- **Aggro Radius:** Counter-attack mechanic when fleeing lifeform is cornered (upcoming).
+- **Simulation Manager:** Spawning lifeforms, managing factions, population counts.
+- **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
+- **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.
