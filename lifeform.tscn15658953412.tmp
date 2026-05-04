@@ -23,10 +23,12 @@ albedo_color = Color(1, 0.3019608, 1, 1)
 radius = 10.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_resr"]
-radius = 20.0
+radius = 4.0
 
 [node name="Lifeform" type="CharacterBody3D" unique_id=2104863254]
 script = ExtResource("1_hokl5")
+collision_radius = null
+knockback_force = null
 resource_detection_radius = 4.0
 mass = 1.0
 max_speed = 1.0

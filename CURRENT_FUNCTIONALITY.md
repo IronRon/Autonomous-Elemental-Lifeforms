@@ -119,9 +119,97 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - `MODE_LEADER`: leads formation of up to 2 followers; checks for merge opportunities.
 - `MODE_FOLLOWER`: follows leader at assigned offset slot (left or right).
 - `MODE_SEEK`: seeks nearest mana orb; stable mode until pickup via `on_orb_picked()`.
+- `MODE_PURSUE`: anti-magic lifeforms chase non-anti-magic prey within DetectionArea using Pursue behavior.
+- `MODE_FLEE`: non-anti-magic lifeforms escape from anti-magic predators using Flee behavior.
+
+### Pursuit & Flee System (Fully Implemented)
+
+#### How It Works
+
+**Detection & Priority:**
+- Threat/prey detection runs at the START of every frame, BEFORE partner detection, so combat takes priority.
+- Each lifeform scans its `DetectionArea` (10m radius) for threats or prey.
+
+**For Non-Anti-Magic Lifeforms (Flee Behavior):**
+1. Scans `DetectionArea` for anti-magic predators.
+2. Only considers predators at equal or higher level (configurable via `level_fear_threshold`).
+   - Default: flee from predators at `level >= self.level`
+   - Threshold +1: flee only if `level > self.level` (accept equals)
+3. When threat detected → enters `MODE_FLEE` and enables Flee behavior.
+4. Flee behavior: uses `Flee` steering to move away from predator, predicting its future position.
+
+**For Anti-Magic Lifeforms (Pursue Behavior):**
+1. Scans `DetectionArea` for non-anti-magic lifeforms.
+2. Skips followers to avoid interrupting ally formations.
+3. When prey detected → enters `MODE_PURSUE` and enables Pursue behavior.
+4. Pursue behavior: uses `Pursue` steering (intercept prediction) to chase prey.
+   - Calculates prey's estimated position based on velocity and distance.
+   - Chases predicted intercept point rather than current position.
+
+**How Pursuit/Flee Continue Each Frame:**
+- `_pursue_prey_only()`: Maintains pursuit by:
+  - Checking if prey still exists and is valid.
+  - Checking if prey is still in `DetectionArea` (10m radius).
+  - Continuously updating pursue behavior's target each frame to track movement.
+  - Returns to `MODE_WANDER` immediately if prey disappears or leaves range.
+  
+- `_flee_from_threat_only()`: Maintains flee by:
+  - Checking if threat still exists and is valid.
+  - Checking if threat is still in `DetectionArea` (10m radius).
+  - Continuously updating flee behavior's enemy reference each frame.
+  - Returns to `MODE_WANDER` immediately if threat disappears or leaves range.
+
+#### When Pursuit/Flee Stop
+
+Pursuit or flee **exit immediately** if ANY of these conditions become true:
+
+1. **Target is Destroyed:**
+   - Prey is freed/invalid (checked via `is_instance_valid(current_prey)`).
+   - Predator is freed/invalid (checked via `is_instance_valid(current_threat)`).
+   - → Return to `MODE_WANDER` and resume normal behavior.
+
+2. **Target Leaves Detection Range:**
+   - Prey moves outside the 10m `DetectionArea` radius.
+   - Predator moves outside the 10m `DetectionArea` radius.
+   - Detection loop checks all bodies in area; if target not found → return to wander.
+
+3. **Lifeform is Freed:**
+   - When a lifeform dies or is removed, cleanup via `_exit_tree()` releases follower slots.
+   - The hunter/prey relationship ends naturally.
+
+4. **Mode Switching (Future Combat Phase):**
+   - When aggro radius is implemented, prey may counter-attack if predator gets too close.
+   - When health reaches 0, lifeform queue_free()s (not yet implemented).
+
+#### Example Scenario
+
+1. **Initial State:** Fire level-1 wandering, Anti-Magic level-1 wandering.
+2. **Anti-Magic Spawns Anti-Magic:** Anti-magic detects fire in `DetectionArea` → `MODE_PURSUE` starts.
+3. **Pursuit Active:** Fire flees, anti-magic chases with Pursue behavior (intercept calculation).
+4. **Prey Escapes:** Fire flees 12m away, outside 10m radius → anti-magic exits pursue, returns to wander.
+5. **Predator Turns Back:** Anti-magic loses interest, wanders again. Fire resumes normal behavior (formation/seeking).
+
+#### Configurable Parameters
+
+- `threat_detection_radius`: Distance at which threats/prey are detectable (export, default 10.0m).
+  - Reuses existing `DetectionArea` collision shape.
+- `level_fear_threshold`: How level difference affects fear (export, default 0).
+  - 0: flee from equal or higher level.
+  - 1: flee only from strictly higher level.
+  - -1: flee from all anti-magic (even lower level).
+  
+#### Known Limitations (Pending Future Work)
+
+- **No Collision Damage Yet:** Pursuit/flee don't cause damage on collision; health stays unchanged.
+- **No Aggro Radius:** Prey can flee indefinitely; no "too close" counter-attack mechanic.
+- **No Attack Cooldown:** Anti-magic don't consume energy to attack (energy system is placeholder).
+- **No Death Mechanics:** Lifeforms don't die when health depletes; they persist until manually removed.
+- **No Combat Resolution:** No knockback, bounce, or energy drain on contact.
 
 ## What Is Not Implemented Yet
 - Combat resolution / predator-prey outcomes (using energy vs health)
+- Aggro radius and flee→pursue counter-attack transition (when predator too close)
+- Collision-based damage application and knockback physics
+- Health depletion and death (queue_free when health <= 0)
 - Simulation manager for spawning and faction counts
-- Attack and take_damage mechanics
 - HUD / debug visualization of energy and stats

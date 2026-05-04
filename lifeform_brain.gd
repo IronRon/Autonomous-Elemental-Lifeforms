@@ -10,7 +10,9 @@ var boid
 @export var formation_offset_x: float = 1.5
 @export var formation_offset_z: float = -1.5
 @export var lifeform_scene_path: String = "res://lifeform.tscn"
-@export var merge_check_interval: float = 5.0
+@export var merge_check_interval: float = 10.0
+@export var threat_detection_radius: float = 10.0  # Reuses DetectionArea for predator detection
+@export var level_fear_threshold: int = 0  # Flee if predator.level >= self.level + threshold
 
 var _merge_check_timer: float = 0.0
 
@@ -18,11 +20,15 @@ var current_mode: String = ""
 var current_partner: Boid
 var leader_boid: Boid
 var follower_slot: int = -1
+var current_threat: Boid = null  # The predator we're fleeing from
+var current_prey: Boid = null  # The prey we're pursuing
 
 const MODE_WANDER = "wander"
 const MODE_LEADER = "leader"
 const MODE_FOLLOWER = "follower"
 const MODE_SEEK = "seek"
+const MODE_PURSUE = "pursue"
+const MODE_FLEE = "flee"
 
 const SLOT_LEFT = 0
 const SLOT_RIGHT = 1
@@ -39,6 +45,22 @@ func _ready():
 func _physics_process(delta):
 	if boid == null:
 		return
+
+	# Check for threats (predators) in DetectionArea - prioritize threat avoidance.
+	# If we're not currently fleeing or pursuing, and we detect a predator, switch modes.
+	if current_mode != MODE_FLEE and current_mode != MODE_PURSUE:
+		var predator = _find_nearest_predator()
+		if predator != null:
+			_set_flee_mode(predator)
+			return
+
+	# Check for prey (for anti-magic lifeforms).
+	# If we're anti-magic and not already pursuing, find prey in DetectionArea.
+	if boid.element_type == boid.ElementType.AntiMagic and current_mode != MODE_PURSUE:
+		var prey = _find_nearest_prey()
+		if prey != null:
+			_set_pursue_mode(prey)
+			return
 
 	# If Seek is active but its target was removed (orb picked), return to wandering.
 	var seek_check = boid.get_node_or_null("Seek")
@@ -63,6 +85,16 @@ func _physics_process(delta):
 	# Stable seeking mode: stay in seek until orb is picked or destroyed.
 	# Prevents oscillation between seek and wander by holding mode until on_orb_picked() is called.
 	if current_mode == MODE_SEEK:
+		return
+	
+	# Pursuit mode: chase the prey until it's out of range or destroyed.
+	if current_mode == MODE_PURSUE:
+		_pursue_prey_only()
+		return
+	
+	# Flee mode: escape from the predator until it's out of range or destroyed.
+	if current_mode == MODE_FLEE:
+		_flee_from_threat_only()
 		return
 	
 	# print(boid, current_mode)
@@ -108,16 +140,6 @@ func _physics_process(delta):
 
 func _exit_tree() -> void:
 	_release_slot()
-
-func see_enemy(enemy):
-	boid.set_enabled_all(false)
-	boid.get_node("Flee").enabled = true
-	boid.get_node("Flee").enemy_boid = enemy
-
-func see_ally_to_merge(ally):
-	boid.set_enabled_all(false)
-	boid.get_node("Seek").enabled = true
-	boid.get_node("Seek").target = ally
 
 
 func on_orb_picked(orb: Node) -> void:
@@ -179,6 +201,75 @@ func _find_nearest_mana_orb():
 			return best_orb
 
 
+func _find_nearest_predator() -> Boid:
+	"""Find the closest anti-magic lifeform in detection range that poses a threat.
+	Returns the predator (Boid) or null if none found. Threat determined by:
+	- Must be anti-magic element type
+	- Must be equal or higher level than self (adjusted by level_fear_threshold)"""
+	var detection_area = boid.get_node_or_null("DetectionArea")
+	if detection_area == null:
+		return null
+	
+	var best_predator: Boid = null
+	var best_distance = INF
+	
+	for body in detection_area.get_overlapping_bodies():
+		if body == boid:
+			continue
+		if not (body is Boid):
+			continue
+		
+		# Only anti-magic lifeforms are predators.
+		if body.element_type != boid.ElementType.AntiMagic:
+			continue
+		
+		# Only consider lifeforms that are strong enough to be a threat.
+		# Default threshold 0: flee if predator.level >= self.level
+		# Threshold 1: flee only if predator.level > self.level (true equal is ok)
+		if body.level < (boid.level + level_fear_threshold):
+			continue
+		
+		var distance = boid.global_transform.origin.distance_to(body.global_transform.origin)
+		if distance < best_distance:
+			best_distance = distance
+			best_predator = body
+	
+	return best_predator
+
+
+func _find_nearest_prey() -> Boid:
+	"""Find the closest non-anti-magic lifeform in detection range for this anti-magic predator to pursue.
+	Returns the prey (Boid) or null if none found. Only valid when called on anti-magic lifeforms."""
+	var detection_area = boid.get_node_or_null("DetectionArea")
+	if detection_area == null:
+		return null
+	
+	var best_prey: Boid = null
+	var best_distance = INF
+	
+	for body in detection_area.get_overlapping_bodies():
+		if body == boid:
+			continue
+		if not (body is Boid):
+			continue
+		
+		# Skip other anti-magic lifeforms (they are peers, not prey).
+		if body.element_type == boid.ElementType.AntiMagic:
+			continue
+		
+		# Skip lifeforms that are already following someone (potentially allied).
+		var other_brain = body.get_node_or_null("LifeformBrain")
+		if other_brain and other_brain.current_mode == MODE_FOLLOWER:
+			continue
+		
+		var distance = boid.global_transform.origin.distance_to(body.global_transform.origin)
+		if distance < best_distance:
+			best_distance = distance
+			best_prey = body
+	
+	return best_prey
+
+
 ## Helper: slot management and follower resolution
 ## These functions manage the two reserved follower slots for a leader. Followers claim
 ## a slot when they enter follower mode. Leaders consult these slots to determine
@@ -206,6 +297,8 @@ func _set_wander_mode() -> void:
 		return
 	current_mode = MODE_WANDER
 	current_partner = null
+	current_threat = null
+	current_prey = null
 	boid.set_enabled_all(false)
 	boid.get_node("Wander").enabled = true
 
@@ -217,6 +310,8 @@ func _set_leader_mode() -> void:
 		return
 	current_mode = MODE_LEADER
 	current_partner = null
+	current_threat = null
+	current_prey = null
 	boid.set_enabled_all(false)
 	boid.get_node("Wander").enabled = true
 
@@ -235,6 +330,8 @@ func _set_follower_mode(partner: Boid) -> void:
 	_release_slot()
 	current_mode = MODE_FOLLOWER
 	current_partner = partner
+	current_threat = null
+	current_prey = null
 	leader_boid = partner
 	follower_slot = slot
 	boid.set_enabled_all(false)
@@ -244,6 +341,98 @@ func _set_follower_mode(partner: Boid) -> void:
 	offset_pursue.leader_boid = partner
 	offset_pursue.calculate_offset()
 	offset_pursue.enabled = true
+
+
+func _set_pursue_mode(prey: Boid) -> void:
+	"""Enter pursuit mode targeting the given prey lifeform.
+	Anti-magic lifeforms use Pursue behavior to chase down non-anti-magic targets."""
+	if prey == null:
+		return
+	
+	if current_mode == MODE_PURSUE and current_prey == prey:
+		return
+	
+	current_mode = MODE_PURSUE
+	current_partner = null
+	current_threat = null
+	current_prey = prey
+	boid.set_enabled_all(false)
+	var pursue = boid.get_node("Pursue")
+	pursue.enemy_boid = prey
+	pursue.enabled = true
+
+
+func _set_flee_mode(threat: Boid) -> void:
+	"""Enter flee mode to escape from the given predator lifeform.
+	Uses Flee behavior to maintain distance from anti-magic threats."""
+	if threat == null:
+		return
+	
+	if current_mode == MODE_FLEE and current_threat == threat:
+		return
+	
+	current_mode = MODE_FLEE
+	current_partner = null
+	current_threat = threat
+	current_prey = null
+	boid.set_enabled_all(false)
+	var flee = boid.get_node("Flee")
+	flee.enemy_boid = threat
+	flee.enabled = true
+
+
+func _pursue_prey_only() -> void:
+	"""Maintain pursuit mode. Exit if prey is invalid or out of range."""
+	var pursue = boid.get_node("Pursue")
+	boid.set_enabled_all(false)
+	pursue.enabled = true
+	
+	# If prey is gone or no longer a valid target, return to wander.
+	if not is_instance_valid(current_prey):
+		_set_wander_mode()
+		return
+	
+	# If prey left detection range, return to wander.
+	var detection_area = boid.get_node_or_null("DetectionArea")
+	if detection_area:
+		var in_range = false
+		for body in detection_area.get_overlapping_bodies():
+			if body == current_prey:
+				in_range = true
+				break
+		if not in_range:
+			_set_wander_mode()
+			return
+	
+	# Still pursuing: update target in case it changed direction.
+	pursue.enemy_boid = current_prey
+
+
+func _flee_from_threat_only() -> void:
+	"""Maintain flee mode. Exit if threat is invalid or out of range."""
+	var flee = boid.get_node("Flee")
+	boid.set_enabled_all(false)
+	flee.enabled = true
+	
+	# If threat is gone or no longer a valid target, return to wander.
+	if not is_instance_valid(current_threat):
+		_set_wander_mode()
+		return
+	
+	# If threat left detection range, return to wander.
+	var detection_area = boid.get_node_or_null("DetectionArea")
+	if detection_area:
+		var in_range = false
+		for body in detection_area.get_overlapping_bodies():
+			if body == current_threat:
+				in_range = true
+				break
+		if not in_range:
+			_set_wander_mode()
+			return
+	
+	# Still fleeing: update enemy in case they changed direction.
+	flee.enemy_boid = current_threat
 
 
 func _follow_leader_only() -> void:
@@ -264,6 +453,8 @@ func _follow_leader_only() -> void:
 	_release_slot()
 	current_mode = MODE_WANDER
 	current_partner = null
+	current_threat = null
+	current_prey = null
 	_set_wander_mode()
 
 
