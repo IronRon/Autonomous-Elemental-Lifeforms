@@ -26,7 +26,7 @@ radius = 10.0
 radius = 8.0
 
 [node name="Lifeform" type="CharacterBody3D" unique_id=2104863254]
-collision_mask = 7
+collision_mask = 2
 script = ExtResource("1_hokl5")
 collision_impulse_strength = 8.0
 resource_detection_radius = 8.0
@@ -47,6 +47,7 @@ mesh = SubResource("SphereMesh_aengs")
 shape = SubResource("SphereShape3D_cxs1n")
 
 [node name="ResourceDetection" type="Area3D" parent="." unique_id=1200000000]
+collision_mask = 4
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="ResourceDetection" unique_id=1200000001]
 shape = SubResource("SphereShape3D_resr")
@@ -56,41 +57,49 @@ script = ExtResource("10_utol8")
 
 [node name="Constrain" type="Node" parent="." unique_id=1986950636]
 script = ExtResource("3_aengs")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://ci8facjqq07ft"
 
 [node name="Avoidance" type="Node" parent="." unique_id=495076555]
 script = ExtResource("4_yugsa")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://s5pb8njisohn"
 
 [node name="Flee" type="Node" parent="." unique_id=1098532233]
 script = ExtResource("5_ndjnu")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://cbrc3unamm5q3"
 
 [node name="Pursue" type="Node" parent="." unique_id=129754745]
 script = ExtResource("6_2f8je")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://wtnjsmv3y8y2"
 
 [node name="Seek" type="Node" parent="." unique_id=1678316504]
 script = ExtResource("7_4csf1")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://c2d7mphmtn1jv"
 
 [node name="Arrive" type="Node" parent="." unique_id=2131381815]
 script = ExtResource("8_ttbyj")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://bn4xj07get8k6"
 
 [node name="Wander" type="Node" parent="." unique_id=1893359678]
 script = ExtResource("9_wjors")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://baw56rnhj0aqm"
 
 [node name="OffsetPursue" type="Node" parent="." unique_id=1893359680]
 script = ExtResource("10_8xgk2")
+draw_gizmos = false
 enabled = false
 metadata/_custom_type_script = "uid://h5wrviq7ex0m"
 

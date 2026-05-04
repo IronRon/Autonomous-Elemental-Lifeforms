@@ -14,6 +14,8 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - `DetectionArea` (`Area3D`) + child collision shape
 - `LifeformBrain` (`Node`) with script `lifeform_brain.gd`
 - Steering behavior nodes:
+  - `Constrain`
+  - `Avoidance`
   - `Wander`
   - `Seek`
   - `Arrive`
@@ -22,6 +24,25 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `OffsetPursue`
   - plus optional behavior nodes already present
 - `LifeformStats` (`Node`) with script `lifeform_stats.gd`
+
+## World / Environment (`world.tscn`)
+- Main world scene instances a separate `environment.tscn` scene.
+- Current environment uses KayKit-style low-poly assets for a simple playable space.
+- World includes an invisible large `StaticBody3D` floor/collision volume on collision layer 2.
+- Environment rocks, walls, mountains, pillars, and other obstacles should use physics collision on layer 2 so:
+  - lifeforms can avoid them with `Avoidance`
+  - simulation spawn checks can reject blocked positions
+  - mana orbs can avoid teleporting inside scenery
+- `ObserverCamera` uses `camera_free_fly.gd` for inspection.
+
+## Collision Layer / Mask Conventions
+- Layer 1: lifeforms.
+- Layer 2: environment / obstacle collision.
+- Layer 3: mana orbs.
+- Lifeform root collision mask currently includes environment obstacles for movement/avoidance.
+- `ResourceDetection` uses collision mask 4, meaning it only detects layer 3 mana orbs.
+- `ManaOrb` root uses collision layer 4, meaning it lives on layer 3.
+- KayKit or custom environment collision must be assigned to layer 2 for avoidance and safe spawning to work.
 
 ## `lifeform.gd` (Root Controller)
 - Extends `Boid` and exposes main editable properties:
@@ -48,6 +69,9 @@ This document summarizes what is currently implemented for the lifeform prototyp
 
 ## `lifeform_brain.gd` (Behavior Selection)
 - Default mode is `wander`.
+- `Constrain` and `Avoidance` are treated as always-on support steering.
+  - The brain re-enables them after every `boid.set_enabled_all(false)` state reset.
+  - This means wander, seek, pursue, flee, counter-attack, leader, and follower modes all keep arena/obstacle steering active.
 - Finds compatible nearby lifeforms using `DetectionArea`:
   - same element (configurable)
   - same level (configurable)
@@ -88,16 +112,65 @@ This document summarizes what is currently implemented for the lifeform prototyp
 ## Mana Orb System (Implemented)
 - `ManaOrb` is a `StaticBody3D` with an `energy_amount` export (default: 1).
 - Root node: `StaticBody3D` with attached script `mana_orb.gd`.
+- Mana orb root is in the `mana_orbs` group.
+- Mana orb root collision layer is layer 3.
 - Child node: `PickupArea` (Area3D) with collision shape for detecting lifeforms.
 - When a lifeform body enters the PickupArea:
   1. Mana orb notifies the lifeform's brain via `on_orb_picked(self)`
   2. Lifeform gains energy via `add_attack_energy(energy_amount)`
   3. Mana orb frees itself
 - Lifeforms detect orbs using a separate `ResourceDetection` area with configurable `resource_detection_radius`.
+- `ResourceDetection` only masks mana-orb layer 3, so it no longer mistakes other lifeforms for resources.
+- `_find_nearest_mana_orb()` filters targets to actual `ManaOrb` instances and scans all overlapping orbs before choosing the nearest.
 - Seeking orbs: lifeforms in `MODE_WANDER` with `attack_energy < max_attack_energy` will seek the nearest orb.
   - Enters `MODE_SEEK` and disables other behaviors.
+  - `Constrain` and `Avoidance` remain active during seek.
   - Stays in `MODE_SEEK` until orb is picked or freed.
   - Returns to `MODE_WANDER` after pickup.
+
+## Simulation Manager (`simulation_manager.gd`) (Implemented)
+- `SimulationManager` is a world-level node in `world.tscn`.
+- Runtime setup is deferred with `call_deferred("_start_simulation")` so it can safely add children after scene setup.
+- Configurable exports:
+  - `lifeform_scene`
+  - `mana_orb_scene`
+  - `spawn_parent_path`
+  - `clear_existing_lifeforms`
+  - `clear_existing_mana_orbs`
+  - `lifeforms_per_element`
+  - `mana_orb_count`
+  - `spawn_radius`
+  - `spawn_height`
+  - `mana_orb_spawn_height`
+  - `relocate_mana_orbs`
+  - `mana_orb_relocation_interval`
+  - `lifeform_clearance_radius`
+  - `mana_orb_clearance_radius`
+  - `spawn_blocking_collision_mask`
+  - `max_spawn_attempts`
+  - `random_seed`
+- Default startup behavior:
+  - clears existing nodes in group `lifeforms`
+  - clears existing nodes in group `mana_orbs`
+  - spawns 5 lifeforms for each element type
+  - spawns 15 mana orbs
+  - places both lifeforms and mana orbs randomly within `spawn_radius`
+- Anti-magic lifeforms spawned by the manager receive boosted defaults:
+  - `base_max_speed = 5.0`
+  - `health = 5.0`
+- If `random_seed` is 0, spawn placement is randomized each run.
+- If `random_seed` is non-zero, spawn placement is repeatable.
+
+## Safe Spawning / Mana Orb Relocation
+- Lifeforms and mana orbs use physics overlap checks before accepting random positions.
+- Spawn checks use a `SphereShape3D` against `spawn_blocking_collision_mask` (default layer 2).
+- Lifeform safe placement uses `lifeform_clearance_radius`.
+- Mana orb safe placement uses `mana_orb_clearance_radius`.
+- Each placement tries up to `max_spawn_attempts` candidates before falling back to a random position.
+- Mana orbs can teleport to new random safe positions every `mana_orb_relocation_interval` seconds.
+  - Default interval: 30 seconds.
+  - This helps recover orbs that spawned near scenery or became unreachable.
+  - Relocation only affects nodes in the `mana_orbs` group.
 
 ## Energy & Combat Stats (Implemented)
 - Each lifeform has `attack_energy` (current), `max_attack_energy` (capacity), and `health` (hit points).
@@ -113,6 +186,15 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `DetectionArea` (social/partner detection) with export `social_detection_radius` (default: 10.0)
   - `ResourceDetection` (resource/orb detection) with export `resource_detection_radius` (default: 20.0)
 - Radii are applied to collision shapes in `_ready()`.
+
+## Arena Constraint / Obstacle Avoidance (Implemented)
+- `Constrain` keeps lifeforms inside a circular radius.
+  - Current scene value: `radius = 100.0`.
+  - If no `center_path` is assigned, the center is world origin.
+- `Avoidance` uses raycast feelers against the boid's collision mask.
+  - It avoids physics collision, not visual meshes by themselves.
+  - Obstacles must have `StaticBody3D` / collision shapes on a layer the lifeform can query.
+- The brain keeps `Constrain` and `Avoidance` enabled in every behavior mode.
 
 ## Behavior Modes (STATE MACHINE)
 - `MODE_WANDER`: default; wanders using Wander steering behavior.
@@ -302,6 +384,8 @@ Combat damage is resolved using **slide collision detection** from `move_and_sli
 
 ## What Is Not Implemented Yet
 
-- **Simulation Manager:** Spawning lifeforms, managing factions, population counts.
+- **Population Tracking / Win Conditions:** Faction counts, dominant element detection, simulation end state.
 - **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
 - **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.
+- **Advanced Environment Navigation:** More precise ground-aware placement, nav/pathfinding, or obstacle-aware target selection.
+- **Polish Effects:** Death particles, collision particles, and combat sound effects.

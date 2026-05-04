@@ -233,12 +233,15 @@ func _find_nearest_mana_orb():
 		for body in detection_area.get_overlapping_bodies():
 			if body == boid:
 				continue
-			# Check for ManaOrb by type or by method presence (energy_amount) for compatibility.
+			if not (body is ManaOrb):
+				continue
+
 			var distance = boid.global_transform.origin.distance_to(body.global_transform.origin)
 			if distance < best_distance:
 				best_distance = distance
 				best_orb = body
-			return best_orb
+
+		return best_orb
 
 
 func _find_nearest_predator() -> Boid:

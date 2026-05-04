@@ -12,7 +12,8 @@ material = SubResource("StandardMaterial3D_eoh7s")
 [sub_resource type="SphereShape3D" id="SphereShape3D_eoh7s"]
 radius = 1.0
 
-[node name="ManaOrb" type="StaticBody3D" unique_id=872283028]
+[node name="ManaOrb" type="StaticBody3D" unique_id=872283028 groups=["mana_orbs"]]
+collision_layer = 4
 script = ExtResource("1_eoh7s")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=99183530]
