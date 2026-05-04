@@ -41,44 +41,45 @@ mesh = SubResource("BoxMesh_f3sb7")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.566525, 0, 0)
 shape = SubResource("BoxShape3D_fj7yv")
 
-[node name="LifeformAnti1" parent="." unique_id=2104863254 instance=ExtResource("1_f3sb7")]
+[node name="LifeformAnti1" parent="." unique_id=2104863254 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 2.7224388, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
 base_max_speed = 5.0
 max_speed = 5.0
 
-[node name="LifeformAnti2" parent="." unique_id=776330717 instance=ExtResource("1_f3sb7")]
+[node name="LifeformAnti2" parent="." unique_id=776330717 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26973248, 7.577716, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
+health = 10
 
-[node name="LifeformAnti3" parent="." unique_id=1362573189 instance=ExtResource("1_f3sb7")]
+[node name="LifeformAnti3" parent="." unique_id=1362573189 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.488021, 0.7276645, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
 
-[node name="LifeformWind4" parent="." unique_id=864296901 instance=ExtResource("1_f3sb7")]
+[node name="LifeformWind4" parent="." unique_id=864296901 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, 18.969797, 0, 0)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
-[node name="LifeformWind5" parent="." unique_id=2116594744 instance=ExtResource("1_f3sb7")]
+[node name="LifeformWind5" parent="." unique_id=2116594744 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, -13.024401, 0, -9.906914)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
-[node name="LifeformWind6" parent="." unique_id=628143915 instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, -16.654749, 0, 6.266405)
+[node name="LifeformWind6" parent="." unique_id=628143915 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-0.28287715, 0, 0.95915616, 0, 1, 0, -0.95915616, 0, -0.28287715, -16.043999, 4.4091306, 7.1523304)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
-[node name="LifeformWind7" parent="." unique_id=1153086315 instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.8529364, -0.43664438, -0.28607896, -0.5040205, 0.83150285, 0.23359424, 0.13587788, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
+[node name="LifeformWind7" parent="." unique_id=1153086315 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-0.8529364, -0.4366444, -0.28607896, -0.5040205, 0.83150285, 0.23359422, 0.13587789, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
-[node name="LifeformWind8" parent="." unique_id=1685396382 instance=ExtResource("1_f3sb7")]
+[node name="LifeformWind8" parent="." unique_id=1685396382 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, 9.147587, 0, 6.9043407)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)

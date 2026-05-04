@@ -121,6 +121,7 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - `MODE_SEEK`: seeks nearest mana orb; stable mode until pickup via `on_orb_picked()`.
 - `MODE_PURSUE`: anti-magic lifeforms chase non-anti-magic prey within DetectionArea using Pursue behavior.
 - `MODE_FLEE`: non-anti-magic lifeforms escape from anti-magic predators using Flee behavior.
+- `MODE_COUNTER_ATTACK`: (NEW) When fleeing lifeform is cornered within aggro_radius, it pursues the predator to force collision and escape via impulse separation.
 
 ### Pursuit & Flee System (Fully Implemented)
 
@@ -177,17 +178,42 @@ Pursuit or flee **exit immediately** if ANY of these conditions become true:
    - When a lifeform dies or is removed, cleanup via `_exit_tree()` releases follower slots.
    - The hunter/prey relationship ends naturally.
 
-4. **Mode Switching (Future Combat Phase):**
-   - When aggro radius is implemented, prey may counter-attack if predator gets too close.
-   - When health reaches 0, lifeform queue_free()s (not yet implemented).
+#### Aggro Radius & Counter-Attack (NEW)
 
-#### Example Scenario
+When a fleeing lifeform is **cornered** by an approaching predator:
+
+- **Aggro Radius Detection:** If predator distance ≤ `aggro_radius` (export, default 2.5m):
+  - Fleeing lifeform switches from `MODE_FLEE` → `MODE_COUNTER_ATTACK`.
+  - Instead of running away, prey pursues the predator using **Pursue behavior**.
+  - This forces collision between both combatants.
+
+- **Combat & Impulse Separation:** On collision:
+  - Both take damage (mutual damage exchange).
+  - Both receive impulse push that separates them.
+  - Knockback gives prey a chance to escape.
+
+- **After Separation:**
+  - If predator is still within `aggro_radius`, prey remains in `MODE_COUNTER_ATTACK` (continues pursuit).
+  - If predator moves **outside** `aggro_radius`, prey returns to `MODE_FLEE` to resume escape.
+  - If predator leaves `DetectionArea` (>10m), prey returns to `MODE_WANDER`.
+
+- **Counter-Attack Exit Conditions:**
+  - Predator becomes invalid/freed → return to wander.
+  - Predator leaves detection area entirely → return to wander.
+  - Predator moves beyond aggro radius → return to flee.
+
+#### Example Scenario with Aggro Radius
 
 1. **Initial State:** Fire level-1 wandering, Anti-Magic level-1 wandering.
-2. **Anti-Magic Spawns Anti-Magic:** Anti-magic detects fire in `DetectionArea` → `MODE_PURSUE` starts.
-3. **Pursuit Active:** Fire flees, anti-magic chases with Pursue behavior (intercept calculation).
-4. **Prey Escapes:** Fire flees 12m away, outside 10m radius → anti-magic exits pursue, returns to wander.
-5. **Predator Turns Back:** Anti-magic loses interest, wanders again. Fire resumes normal behavior (formation/seeking).
+2. **Anti-Magic Detects Fire:** Anti-magic distance 8m → enters `MODE_PURSUE`, chases Fire.
+3. **Fire Flees:** Fire detects predator 8m away → enters `MODE_FLEE`, escapes.
+4. **Predator Closes Distance:** Anti-magic continues pursuit, closes to 2.5m range.
+5. **Aggro Triggered:** Fire detects distance ≤ 2.5m aggro_radius → switches to `MODE_COUNTER_ATTACK`.
+6. **Counter-Attack Collision:** Fire pursues back with intercept prediction → collision.
+7. **Mutual Damage + Impulse:** Both take 1 damage, both receive directional push.
+8. **Separation Result:** Impulse pushes Fire away; Anti-Magic still chasing.
+9. **Re-Evaluation:** Fire checks distance → if > 2.5m, returns to `MODE_FLEE` to escape.
+10. **Chase Continues:** Anti-Magic resumes pursuit at 3-4m range, Fire flees. Cycle repeats until one escapes or dies.
 
 #### Configurable Parameters
 
@@ -197,6 +223,9 @@ Pursuit or flee **exit immediately** if ANY of these conditions become true:
   - 0: flee from equal or higher level.
   - 1: flee only from strictly higher level.
   - -1: flee from all anti-magic (even lower level).
+- `aggro_radius`: Distance threshold at which cornered prey triggers counter-attack (export, default 2.5m).
+  - When predator enters this radius during flight, prey switches to pursuit mode.
+  - After impulse separation pushes combatants apart, threshold is checked again each frame.
   
 #### Freed Target Guards
 
@@ -273,7 +302,6 @@ Combat damage is resolved using **slide collision detection** from `move_and_sli
 
 ## What Is Not Implemented Yet
 
-- **Aggro Radius:** Counter-attack mechanic when fleeing lifeform is cornered (upcoming).
 - **Simulation Manager:** Spawning lifeforms, managing factions, population counts.
 - **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
 - **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.

@@ -76,7 +76,7 @@ func _update_attack_stats() -> void:
 	match level:
 		1:
 			max_attack_energy = 3
-			health = 2
+			health = health #2
 			# Ensure level-1 lifeforms always have at least 1 energy to enable seeking behavior.
 			attack_energy = max(attack_energy, 1)
 		2:
@@ -97,6 +97,7 @@ func add_attack_energy(amount: int) -> void:
 
 func apply_damage(amount: int) -> bool:
 	# Returns true if this lifeform died from the hit.
+	print(self, " Start health: ", health, " amount: ", amount)
 	if amount <= 0 or is_dead:
 		return false
 	health = max(0, health - amount)
@@ -146,12 +147,15 @@ func die() -> void:
 	set_collision_layer_value(2, false)
 	set_collision_mask_value(2, false)
 	var all_lifeforms = get_tree().get_nodes_in_group("lifeforms")
+	print(all_lifeforms)
 	for lifeform in all_lifeforms:
 		if lifeform == null or lifeform == self or not lifeform.has_node("LifeformBrain"):
 			continue
 		var brain = lifeform.get_node("LifeformBrain")
 		if brain and brain.has_method("clear_threat_reference"):
 			brain.clear_threat_reference(self)
+		if brain and brain.has_method("clear_prey_reference"):
+			brain.clear_prey_reference(self)
 	var brain = get_node_or_null("LifeformBrain")
 	if brain and brain.has_method("on_lifeform_death"):
 		brain.on_lifeform_death()

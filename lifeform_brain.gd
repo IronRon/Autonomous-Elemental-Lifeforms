@@ -13,6 +13,7 @@ var boid
 @export var merge_check_interval: float = 10.0
 @export var threat_detection_radius: float = 10.0  # Reuses DetectionArea for predator detection
 @export var level_fear_threshold: int = 0  # Flee if predator.level >= self.level + threshold
+@export var aggro_radius: float = 5  # When predator enters this radius, prey counter-attacks with pursuit
 
 var _merge_check_timer: float = 0.0
 
@@ -29,6 +30,7 @@ const MODE_FOLLOWER = "follower"
 const MODE_SEEK = "seek"
 const MODE_PURSUE = "pursue"
 const MODE_FLEE = "flee"
+const MODE_COUNTER_ATTACK = "counter_attack"  # Prey pursues predator when cornered
 
 const SLOT_LEFT = 0
 const SLOT_RIGHT = 1
@@ -47,8 +49,9 @@ func _physics_process(delta):
 		return
 
 	# Check for threats (predators) in DetectionArea - prioritize threat avoidance.
-	# If we're not currently fleeing or pursuing, and we detect a predator, switch modes.
-	if current_mode != MODE_FLEE and current_mode != MODE_PURSUE:
+	# Do not override active counter-attack mode here; let that state decide when to
+	# return to flee based on the aggro radius.
+	if current_mode != MODE_FLEE and current_mode != MODE_PURSUE and current_mode != MODE_COUNTER_ATTACK:
 		var predator = _find_nearest_predator()
 		if predator != null:
 			_set_flee_mode(predator)
@@ -90,6 +93,12 @@ func _physics_process(delta):
 	# Pursuit mode: chase the prey until it's out of range or destroyed.
 	if current_mode == MODE_PURSUE:
 		_pursue_prey_only()
+		return
+	
+	# Counter-attack mode: prey pursues predator when cornered (within aggro_radius).
+	# After collision and impulse separation, may return to flee or wander.
+	if current_mode == MODE_COUNTER_ATTACK:
+		_counter_attack_threat_only()
 		return
 	
 	# Flee mode: escape from the predator until it's out of range or destroyed.
@@ -411,6 +420,60 @@ func _set_flee_mode(threat: Boid) -> void:
 	flee.enabled = true
 
 
+func _set_counter_attack_mode(threat: Boid) -> void:
+	"""Enter counter-attack mode when predator gets too close (within aggro_radius).
+	Uses Pursue behavior to chase and force collision, triggering combat impulse separation."""
+	if threat == null:
+		return
+	
+	if current_mode == MODE_COUNTER_ATTACK and current_threat == threat:
+		return
+	
+	current_mode = MODE_COUNTER_ATTACK
+	current_partner = null
+	current_threat = threat
+	current_prey = null
+	boid.set_enabled_all(false)
+	var pursue = boid.get_node("Pursue")
+	pursue.enemy_boid = threat
+	pursue.enabled = true
+
+
+func _counter_attack_threat_only() -> void:
+	"""Counter-attack mode: prey pursues predator when cornered (within aggro_radius).
+	Use Pursue behavior for intercept-based chasing to ensure collision.
+	Exit if threat is invalid, out of range, or moves beyond aggro_radius."""
+	var pursue = boid.get_node("Pursue")
+	boid.set_enabled_all(false)
+	pursue.enabled = true
+	
+	# If threat is gone or no longer a valid target, return to wander.
+	if not is_instance_valid(current_threat):
+		_set_wander_mode()
+		return
+	
+	# If threat left detection range entirely, return to wander.
+	var detection_area = boid.get_node_or_null("DetectionArea")
+	if detection_area:
+		var in_range = false
+		for body in detection_area.get_overlapping_bodies():
+			if body == current_threat:
+				in_range = true
+				break
+		if not in_range:
+			_set_wander_mode()
+			return
+	
+	# If threat moved outside aggro radius, return to fleeing.
+	var distance_to_threat = boid.global_transform.origin.distance_to(current_threat.global_transform.origin)
+	if distance_to_threat > aggro_radius:
+		_set_flee_mode(current_threat)
+		return
+	
+	# Still counter-attacking: update pursue target in case threat changed direction.
+	pursue.enemy_boid = current_threat
+
+
 func _pursue_prey_only() -> void:
 	"""Maintain pursuit mode. Exit if prey is invalid or out of range."""
 	var pursue = boid.get_node("Pursue")
@@ -439,10 +502,8 @@ func _pursue_prey_only() -> void:
 
 
 func _flee_from_threat_only() -> void:
-	"""Maintain flee mode. Exit if threat is invalid or out of range."""
-	var flee = boid.get_node("Flee")
-	boid.set_enabled_all(false)
-	flee.enabled = true
+	"""Maintain flee mode. Check aggro radius first, then validate threat/range.
+	If threat enters aggro_radius, switch to counter-attack (pursuit) mode instead of fleeing."""
 	
 	# If threat is gone or no longer a valid target, return to wander.
 	if not is_instance_valid(current_threat):
@@ -461,7 +522,17 @@ func _flee_from_threat_only() -> void:
 			_set_wander_mode()
 			return
 	
-	# Still fleeing: update enemy in case they changed direction.
+	# Check if threat has entered aggro radius FIRST - switch to counter-attack if so.
+	# This prevents setting up flee behavior only to disable it immediately.
+	var distance_to_threat = boid.global_transform.origin.distance_to(current_threat.global_transform.origin)
+	if distance_to_threat <= aggro_radius:
+		_set_counter_attack_mode(current_threat)
+		return
+	
+	# Still fleeing at safe distance: set up flee behavior and continue.
+	var flee = boid.get_node("Flee")
+	boid.set_enabled_all(false)
+	flee.enabled = true
 	flee.enemy_boid = current_threat
 
 
