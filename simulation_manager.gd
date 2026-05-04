@@ -3,12 +3,15 @@ extends Node
 @export var lifeform_scene: PackedScene = preload("res://lifeform.tscn")
 @export var mana_orb_scene: PackedScene = preload("res://mana_orb.tscn")
 @export var spawn_parent_path: NodePath = ".."
+@export var use_evolution_test_spawn: bool = false
 @export var clear_existing_lifeforms: bool = true
 @export var clear_existing_mana_orbs: bool = true
-@export var lifeforms_per_element: int = 5
+@export var lifeforms_per_element: int = 7
 @export var mana_orb_count: int = 15
 @export var spawn_radius: float = 90.0
 @export var spawn_height: float = 15.0
+@export var evolution_test_center: Vector3 = Vector3.ZERO
+@export var evolution_test_merge_check_interval: float = 15.0
 @export var mana_orb_spawn_height: float = 15.0
 @export var relocate_mana_orbs: bool = true
 @export var mana_orb_relocation_interval: float = 30.0
@@ -41,8 +44,11 @@ func _start_simulation() -> void:
 	if clear_existing_mana_orbs:
 		_clear_existing_mana_orbs()
 
-	_spawn_initial_lifeforms(spawn_parent)
-	_spawn_initial_mana_orbs(spawn_parent)
+	if use_evolution_test_spawn:
+		_spawn_evolution_test(spawn_parent)
+	else:
+		_spawn_initial_lifeforms(spawn_parent)
+		_spawn_initial_mana_orbs(spawn_parent)
 	_setup_mana_orb_relocation_timer()
 
 
@@ -77,6 +83,25 @@ func _spawn_initial_mana_orbs(spawn_parent: Node) -> void:
 		_spawn_mana_orb(spawn_parent, index)
 
 
+func _spawn_evolution_test(spawn_parent: Node) -> void:
+	if lifeform_scene == null:
+		push_error("SimulationManager needs a lifeform scene.")
+		return
+
+	var y = spawn_height
+	var center = evolution_test_center
+
+	# Cluster A: three level-1 Fire lifeforms should merge into a level-2 form.
+	_spawn_lifeform_at(spawn_parent, 0, 1, center + Vector3(-7.0, y, 0.0), "FireL1MergeA")
+	_spawn_lifeform_at(spawn_parent, 0, 1, center + Vector3(-4.5, y, 1.5), "FireL1MergeB")
+	_spawn_lifeform_at(spawn_parent, 0, 1, center + Vector3(-4.5, y, -1.5), "FireL1MergeC")
+
+	# Cluster B: one level-2 Fire leader plus two level-1 followers should merge into level 3.
+	_spawn_lifeform_at(spawn_parent, 0, 2, center + Vector3(7.0, y, 0.0), "FireL2Leader")
+	_spawn_lifeform_at(spawn_parent, 0, 1, center + Vector3(9.5, y, 1.5), "FireL1FollowerA")
+	_spawn_lifeform_at(spawn_parent, 0, 1, center + Vector3(9.5, y, -1.5), "FireL1FollowerB")
+
+
 func _spawn_lifeform(spawn_parent: Node, element_type: int, index: int) -> void:
 	var lifeform = lifeform_scene.instantiate()
 	if lifeform == null:
@@ -92,6 +117,32 @@ func _spawn_lifeform(spawn_parent: Node, element_type: int, index: int) -> void:
 		lifeform.health = 5.0
 
 	spawn_parent.add_child(lifeform)
+
+
+func _spawn_lifeform_at(spawn_parent: Node, element_type: int, level: int, position: Vector3, node_name: String) -> void:
+	var lifeform = lifeform_scene.instantiate()
+	if lifeform == null:
+		return
+
+	lifeform.name = node_name
+	lifeform.add_to_group("lifeforms")
+	lifeform.element_type = element_type
+	lifeform.level = level
+	lifeform.position = position
+	_configure_evolution_test_brain(lifeform)
+
+	if element_type == 4:
+		lifeform.base_max_speed = 5.0
+		lifeform.health = 5.0
+
+	spawn_parent.add_child(lifeform)
+
+
+func _configure_evolution_test_brain(lifeform: Node) -> void:
+	var brain = lifeform.get_node_or_null("LifeformBrain")
+	if brain == null:
+		return
+	brain.merge_check_interval = evolution_test_merge_check_interval
 
 
 func _spawn_mana_orb(spawn_parent: Node, index: int) -> void:

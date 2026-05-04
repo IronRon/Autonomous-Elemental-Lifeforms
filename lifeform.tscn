@@ -26,12 +26,15 @@ radius = 10.0
 radius = 8.0
 
 [node name="Lifeform" type="CharacterBody3D" unique_id=2104863254]
-collision_mask = 2
+collision_mask = 3
 script = ExtResource("1_hokl5")
 collision_impulse_strength = 8.0
+social_detection_radius = 10.0
 resource_detection_radius = 8.0
 mass = 1.0
 max_speed = 3.0
+banking = 0.5
+damping = 0.5
 metadata/_custom_type_script = "uid://cmw6n17mebkcx"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=749505881]

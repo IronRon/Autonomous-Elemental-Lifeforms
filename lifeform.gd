@@ -29,7 +29,7 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 var is_dead: bool = false
 
 # Detection radii (meters)
-@export var social_detection_radius: float = 10.0
+@export var social_detection_radius: float = 20.0
 @export var resource_detection_radius: float = 20.0
 
 
@@ -247,12 +247,18 @@ func _color_for_element(value: ElementType) -> Color:
 
 
 func _update_mesh_for_level() -> void:
-	# Swap mesh based on level: sphere for level 1, cube for level 2+.
+	# Swap mesh based on level: sphere for level 1, cube for level 2, capsule for level 3+.
 	if visual == null:
 		return
 	
-	if level >= 2:
-		visual.mesh = BoxMesh.new()
-	else:
-		visual.mesh = SphereMesh.new()
+	match level:
+		1:
+			visual.mesh = SphereMesh.new()
+		2:
+			visual.mesh = BoxMesh.new()
+		_:
+			var capsule = CapsuleMesh.new()
+			capsule.radius = 0.65
+			capsule.height = 1.8
+			visual.mesh = capsule
 	# Material override persists across mesh swap, preserving albedo color.

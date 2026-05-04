@@ -7,10 +7,12 @@ var boid
 
 @export var same_element_only: bool = true
 @export var same_level_only: bool = true
+@export var allow_mixed_level_3_merge: bool = true
+@export var max_evolution_level: int = 3
 @export var formation_offset_x: float = 1.5
 @export var formation_offset_z: float = -1.5
 @export var lifeform_scene_path: String = "res://lifeform.tscn"
-@export var merge_check_interval: float = 10.0
+@export var merge_check_interval: float = 3.0
 @export var threat_detection_radius: float = 10.0  # Reuses DetectionArea for predator detection
 @export var level_fear_threshold: int = 0  # Flee if predator.level >= self.level + threshold
 @export var aggro_radius: float = 5  # When predator enters this radius, prey counter-attacks with pursuit
@@ -209,9 +211,6 @@ func _find_same_element_partner():
 			continue
 		if same_element_only and body.element_type != boid.element_type:
 			continue
-		if same_level_only and body.level != boid.level:
-			continue
-
 		var distance = boid.global_transform.origin.distance_to(body.global_transform.origin)
 		if distance < best_distance:
 			best_distance = distance
@@ -320,6 +319,8 @@ func _find_nearest_prey() -> Boid:
 
 
 func _is_leader_for(partner: Boid) -> bool:
+	if boid.level != partner.level:
+		return boid.level > partner.level
 	return boid.get_instance_id() < partner.get_instance_id()
 
 
@@ -329,8 +330,20 @@ func _is_compatible(other: Boid) -> bool:
 	if same_element_only and other.element_type != boid.element_type:
 		return false
 	if same_level_only and other.level != boid.level:
-		return false
+		return _can_form_mixed_level_3_group(boid, other)
 	return true
+
+
+func _can_form_mixed_level_3_group(first: Boid, second: Boid) -> bool:
+	if not allow_mixed_level_3_merge:
+		return false
+	if first == null or second == null:
+		return false
+	if first.element_type != second.element_type:
+		return false
+	if first.level >= max_evolution_level or second.level >= max_evolution_level:
+		return false
+	return first.level == 2 or second.level == 2
 
 
 func _set_wander_mode() -> void:
@@ -356,6 +369,7 @@ func _set_leader_mode() -> void:
 	current_partner = null
 	current_threat = null
 	current_prey = null
+	_merge_check_timer = max(0.001, merge_check_interval)
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
 	boid.get_node("Wander").enabled = true
@@ -690,12 +704,53 @@ func _check_for_merge_from_leader() -> void:
 	# print("11left: ", left_follower,"right: ", right_follower)
 	if left_follower != null and right_follower != null:
 		# print("left: ", left_follower,"right: ", right_follower)
-		if left_follower.level == 1 and right_follower.level == 1:
-			_perform_merge([boid, left_follower, right_follower])
+		var group = [boid, left_follower, right_follower]
+		var target_level = _get_merge_target_level(group)
+		if target_level > 0:
+			_perform_merge(group, target_level)
 
 
-func _perform_merge(group: Array) -> void:
-	# Merge 3 level-1 lifeforms into 1 level-2 lifeform.
+func _get_merge_target_level(group: Array) -> int:
+	if group.size() != 3:
+		return 0
+	if not _is_valid_merge_group(group):
+		return 0
+
+	if boid.level == 1:
+		for lifeform in group:
+			if lifeform.level != 1:
+				return 0
+		return 2
+
+	if boid.level == 2 and allow_mixed_level_3_merge:
+		for lifeform in group:
+			if lifeform.level < 1 or lifeform.level > 2:
+				return 0
+		return 3
+
+	return 0
+
+
+func _is_valid_merge_group(group: Array) -> bool:
+	var first_lifeform = group[0]
+	if first_lifeform == null:
+		return false
+	if first_lifeform.level >= max_evolution_level:
+		return false
+
+	for lifeform in group:
+		if lifeform == null or not is_instance_valid(lifeform):
+			return false
+		if lifeform.element_type != first_lifeform.element_type:
+			return false
+		if lifeform.level >= max_evolution_level:
+			return false
+
+	return true
+
+
+func _perform_merge(group: Array, target_level: int) -> void:
+	# Merge a compatible three-lifeform group into the requested next evolution level.
 	# Calculate average position.
 	var new_pos = Vector3.ZERO
 	for lifeform in group:
@@ -713,13 +768,11 @@ func _perform_merge(group: Array) -> void:
 	if boid.get_parent() == null:
 		return
 	
-	# Copy element type from the first lifeform and set to level 2.
+	# Copy element type from the first lifeform and set the target evolution level.
 	var first_lifeform = group[0]
 	new_lifeform.element_type = first_lifeform.element_type
-	new_lifeform.level = 2
-	new_lifeform.size_multiplier = 1.5  # Scale up for level 2.
-	new_lifeform.speed_multiplier = 0.8  # Slightly slower for larger lifeform.
-	new_lifeform.strength = 1.2  # Stronger merged lifeform.
+	new_lifeform.level = target_level
+	_apply_evolution_defaults(new_lifeform, target_level)
 	
 	new_lifeform.global_position = new_pos
 	boid.get_parent().add_child(new_lifeform)
@@ -728,3 +781,17 @@ func _perform_merge(group: Array) -> void:
 	for lifeform in group:
 		if lifeform != null:
 			lifeform.queue_free()
+
+
+func _apply_evolution_defaults(new_lifeform: Node, target_level: int) -> void:
+	match target_level:
+		2:
+			new_lifeform.size_multiplier = 1.5
+			new_lifeform.speed_multiplier = 0.8
+			new_lifeform.strength = 1.2
+		3:
+			new_lifeform.size_multiplier = 2.2
+			new_lifeform.speed_multiplier = 0.65
+			new_lifeform.strength = 1.6
+			new_lifeform.attack_energy = 3
+			new_lifeform.health = 6
