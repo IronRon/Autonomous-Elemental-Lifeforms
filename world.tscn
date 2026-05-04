@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://cv7uiwro17rqg"]
 
+[ext_resource type="PackedScene" uid="uid://botf7j7baqxwa" path="res://environment.tscn" id="1_aqk2v"]
 [ext_resource type="PackedScene" uid="uid://bwe633aj3hp8m" path="res://lifeform.tscn" id="1_f3sb7"]
 [ext_resource type="Script" uid="uid://ddpkfx1exnwk6" path="res://camera_free_fly.gd" id="2_5b6x8"]
 [ext_resource type="PackedScene" uid="uid://b7pkhyddppyy8" path="res://mana_orb.tscn" id="3_tlwt5"]
@@ -35,7 +36,10 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1881590330]
 environment = SubResource("Environment_aqk2v")
 
+[node name="Environment" parent="." unique_id=949484712 instance=ExtResource("1_aqk2v")]
+
 [node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1516433844]
+visible = false
 collision_layer = 2
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=167696379]
@@ -69,7 +73,7 @@ element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
 [node name="LifeformWind5" parent="." unique_id=2116594744 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, -13.024401, 0, -9.906914)
+transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, -13.024401, 15.379304, -9.906914)
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
@@ -89,10 +93,10 @@ element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
 [node name="ManaOrb" parent="." unique_id=872283028 instance=ExtResource("3_tlwt5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.364573, 0, -3.775694)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.080833, 7.4219465, -8.894438)
 
 [node name="ManaOrb2" parent="." unique_id=1391113553 instance=ExtResource("3_tlwt5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5280333, 0, 14.631666)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5280333, 17.945505, -25.883556)
 
 [node name="ManaOrb3" parent="." unique_id=765680565 instance=ExtResource("3_tlwt5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2378654, 9.356651, -1.0793934)
