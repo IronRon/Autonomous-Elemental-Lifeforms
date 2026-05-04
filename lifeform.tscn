@@ -26,6 +26,7 @@ radius = 10.0
 radius = 8.0
 
 [node name="Lifeform" type="CharacterBody3D" unique_id=2104863254]
+collision_mask = 7
 script = ExtResource("1_hokl5")
 collision_impulse_strength = 8.0
 resource_detection_radius = 8.0

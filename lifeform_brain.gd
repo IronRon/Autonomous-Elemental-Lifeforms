@@ -79,6 +79,7 @@ func _physics_process(delta):
 		var orb = _find_nearest_mana_orb()
 		if orb:
 			boid.set_enabled_all(false)
+			_enable_always_on_behaviors()
 			var seek = boid.get_node("Seek")
 			seek.target = orb
 			seek.enabled = true
@@ -339,6 +340,7 @@ func _set_wander_mode() -> void:
 	current_threat = null
 	current_prey = null
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	boid.get_node("Wander").enabled = true
 
 
@@ -352,6 +354,7 @@ func _set_leader_mode() -> void:
 	current_threat = null
 	current_prey = null
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	boid.get_node("Wander").enabled = true
 
 
@@ -374,6 +377,7 @@ func _set_follower_mode(partner: Boid) -> void:
 	leader_boid = partner
 	follower_slot = slot
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	var offset_pursue = boid.get_node("OffsetPursue")
 	offset_pursue.use_custom_offset = true
 	offset_pursue.custom_offset_local = _slot_to_offset(slot)
@@ -396,6 +400,7 @@ func _set_pursue_mode(prey: Boid) -> void:
 	current_threat = null
 	current_prey = prey
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	var pursue = boid.get_node("Pursue")
 	pursue.enemy_boid = prey
 	pursue.enabled = true
@@ -415,6 +420,7 @@ func _set_flee_mode(threat: Boid) -> void:
 	current_threat = threat
 	current_prey = null
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	var flee = boid.get_node("Flee")
 	flee.enemy_boid = threat
 	flee.enabled = true
@@ -434,9 +440,20 @@ func _set_counter_attack_mode(threat: Boid) -> void:
 	current_threat = threat
 	current_prey = null
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	var pursue = boid.get_node("Pursue")
 	pursue.enemy_boid = threat
 	pursue.enabled = true
+
+
+func _enable_always_on_behaviors() -> void:
+	# Keep arena and obstacle steering active in every behavior mode.
+	var constrain = boid.get_node_or_null("Constrain")
+	if constrain:
+		constrain.enabled = true
+	var avoidance = boid.get_node_or_null("Avoidance")
+	if avoidance:
+		avoidance.enabled = true
 
 
 func _counter_attack_threat_only() -> void:
@@ -445,6 +462,7 @@ func _counter_attack_threat_only() -> void:
 	Exit if threat is invalid, out of range, or moves beyond aggro_radius."""
 	var pursue = boid.get_node("Pursue")
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	pursue.enabled = true
 	
 	# If threat is gone or no longer a valid target, return to wander.
@@ -478,6 +496,7 @@ func _pursue_prey_only() -> void:
 	"""Maintain pursuit mode. Exit if prey is invalid or out of range."""
 	var pursue = boid.get_node("Pursue")
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	pursue.enabled = true
 	
 	# If prey is gone or no longer a valid target, return to wander.
@@ -532,6 +551,7 @@ func _flee_from_threat_only() -> void:
 	# Still fleeing at safe distance: set up flee behavior and continue.
 	var flee = boid.get_node("Flee")
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	flee.enabled = true
 	flee.enemy_boid = current_threat
 
@@ -539,6 +559,7 @@ func _flee_from_threat_only() -> void:
 func _follow_leader_only() -> void:
 	var offset_pursue = boid.get_node("OffsetPursue")
 	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
 	offset_pursue.enabled = true
 
 	if is_instance_valid(leader_boid) and _is_compatible(leader_boid):
