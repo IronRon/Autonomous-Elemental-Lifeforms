@@ -51,6 +51,12 @@ shape = SubResource("SphereShape3D_resr")
 
 [node name="LifeformBrain" type="Node" parent="." unique_id=797649179]
 script = ExtResource("10_utol8")
+same_element_only = null
+same_level_only = null
+formation_offset_x = null
+formation_offset_z = null
+lifeform_scene_path = null
+merge_check_interval = null
 
 [node name="Constrain" type="Node" parent="." unique_id=1986950636]
 script = ExtResource("3_aengs")

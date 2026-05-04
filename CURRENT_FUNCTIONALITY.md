@@ -85,8 +85,43 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `Esc`: release mouse
   - `Tab`: capture mouse
 
+## Mana Orb System (Implemented)
+- `ManaOrb` is a `StaticBody3D` with an `energy_amount` export (default: 1).
+- Root node: `StaticBody3D` with attached script `mana_orb.gd`.
+- Child node: `PickupArea` (Area3D) with collision shape for detecting lifeforms.
+- When a lifeform body enters the PickupArea:
+  1. Mana orb notifies the lifeform's brain via `on_orb_picked(self)`
+  2. Lifeform gains energy via `add_attack_energy(energy_amount)`
+  3. Mana orb frees itself
+- Lifeforms detect orbs using a separate `ResourceDetection` area with configurable `resource_detection_radius`.
+- Seeking orbs: lifeforms in `MODE_WANDER` with `attack_energy < max_attack_energy` will seek the nearest orb.
+  - Enters `MODE_SEEK` and disables other behaviors.
+  - Stays in `MODE_SEEK` until orb is picked or freed.
+  - Returns to `MODE_WANDER` after pickup.
+
+## Energy & Combat Stats (Implemented)
+- Each lifeform has `attack_energy` (current), `max_attack_energy` (capacity), and `health` (hit points).
+- Defaults scale by level:
+  - Level 1: `max_attack_energy = 3`, `health = 2`
+  - Level 2: `max_attack_energy = 5`, `health = 4`
+  - Level 3+: `max_attack_energy = 8`, `health = 6`
+- Method `add_attack_energy(amount)` clamps to [0, max].
+- Method `_update_attack_stats()` applies defaults based on level.
+
+## Detection Radii (Implemented)
+- Two separate detection areas per lifeform:
+  - `DetectionArea` (social/partner detection) with export `social_detection_radius` (default: 10.0)
+  - `ResourceDetection` (resource/orb detection) with export `resource_detection_radius` (default: 20.0)
+- Radii are applied to collision shapes in `_ready()`.
+
+## Behavior Modes (STATE MACHINE)
+- `MODE_WANDER`: default; wanders using Wander steering behavior.
+- `MODE_LEADER`: leads formation of up to 2 followers; checks for merge opportunities.
+- `MODE_FOLLOWER`: follows leader at assigned offset slot (left or right).
+- `MODE_SEEK`: seeks nearest mana orb; stable mode until pickup via `on_orb_picked()`.
+
 ## What Is Not Implemented Yet
-- Evolution merge rule (e.g. 3 same element + level -> level up)
-- Combat resolution / predator-prey outcomes
+- Combat resolution / predator-prey outcomes (using energy vs health)
 - Simulation manager for spawning and faction counts
-- Mana orb support mechanic
+- Attack and take_damage mechanics
+- HUD / debug visualization of energy and stats

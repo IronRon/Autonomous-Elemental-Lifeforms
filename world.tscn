@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bwe633aj3hp8m" path="res://lifeform.tscn" id="1_f3sb7"]
 [ext_resource type="Script" uid="uid://ddpkfx1exnwk6" path="res://camera_free_fly.gd" id="2_5b6x8"]
+[ext_resource type="PackedScene" uid="uid://b7pkhyddppyy8" path="res://mana_orb.tscn" id="3_tlwt5"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fj7yv"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -58,7 +59,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.488021, 0.7276645, 0)
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
 
+[node name="Lifeform4" parent="." unique_id=864296901 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, 18.969797, 0, 0)
+element_type = 1
+visual_color = Color(0, 1, 0, 1)
+
+[node name="ManaOrb" parent="." unique_id=872283028 instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.364573, 0, -3.775694)
+
+[node name="ManaOrb2" parent="." unique_id=1391113553 instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5280333, 0, 14.631666)
+
+[node name="ManaOrb3" parent="." unique_id=765680565 instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2378654, 9.356651, -1.0793934)
+
 [node name="ObserverCamera" type="Camera3D" parent="." unique_id=1100823712]
-transform = Transform3D(0.96583503, -0.035993703, 0.25664586, 0, 0.99030817, 0.1388873, -0.2591576, -0.13414223, 0.9564743, 0, 8, 18)
+transform = Transform3D(0.96583503, -0.035993703, 0.2566459, 0, 0.99030817, 0.13888732, -0.2591576, -0.13414223, 0.95647436, 0, 8, 18)
 current = true
 script = ExtResource("2_5b6x8")

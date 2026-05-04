@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://b7pkhyddppyy8"]
+
+[ext_resource type="Script" uid="uid://dg1v8721h7hk3" path="res://mana_orb.gd" id="1_eoh7s"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_q1rkj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eoh7s"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_fulnv"]
+material = SubResource("StandardMaterial3D_eoh7s")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_eoh7s"]
+radius = 1.0
+
+[node name="ManaOrb" type="StaticBody3D" unique_id=872283028]
+script = ExtResource("1_eoh7s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=99183530]
+shape = SubResource("SphereShape3D_q1rkj")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1292339094]
+mesh = SubResource("SphereMesh_fulnv")
+
+[node name="PickupArea" type="Area3D" parent="." unique_id=1292339095]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PickupArea" unique_id=913561057]
+shape = SubResource("SphereShape3D_eoh7s")

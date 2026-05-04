@@ -22,6 +22,7 @@ var follower_slot: int = -1
 const MODE_WANDER = "wander"
 const MODE_LEADER = "leader"
 const MODE_FOLLOWER = "follower"
+const MODE_SEEK = "seek"
 
 const SLOT_LEFT = 0
 const SLOT_RIGHT = 1
@@ -38,6 +39,32 @@ func _ready():
 func _physics_process(delta):
 	if boid == null:
 		return
+
+	# If Seek is active but its target was removed (orb picked), return to wandering.
+	var seek_check = boid.get_node_or_null("Seek")
+	if seek_check and seek_check.enabled:
+		var t = seek_check.target
+		if t == null or not is_instance_valid(t):
+			_set_wander_mode()
+			return
+
+	# Resource-seeking behavior: if wandering and below max energy, seek the nearest mana orb.
+	# This allows lifeforms to proactively collect resources to maintain attack_energy.
+	if current_mode == MODE_WANDER and boid.attack_energy < boid.max_attack_energy:
+		var orb = _find_nearest_mana_orb()
+		if orb:
+			boid.set_enabled_all(false)
+			var seek = boid.get_node("Seek")
+			seek.target = orb
+			seek.enabled = true
+			current_mode = MODE_SEEK
+			return
+	
+	# Stable seeking mode: stay in seek until orb is picked or destroyed.
+	# Prevents oscillation between seek and wander by holding mode until on_orb_picked() is called.
+	if current_mode == MODE_SEEK:
+		return
+	
 	# print(boid, current_mode)
 	# Sticky follower mode: once following, keep following until leader is invalid.
 	if current_mode == MODE_FOLLOWER:
@@ -93,6 +120,12 @@ func see_ally_to_merge(ally):
 	boid.get_node("Seek").target = ally
 
 
+func on_orb_picked(orb: Node) -> void:
+		"""Called by a ManaOrb when picked up by this lifeform.
+		Transitions from MODE_SEEK back to wander after energy is gained."""
+		_set_wander_mode()
+
+
 func _find_same_element_partner():
 	# Pick the nearest compatible non-follower in detection range.
 	var detection_area = boid.get_node_or_null("DetectionArea")
@@ -125,6 +158,27 @@ func _find_same_element_partner():
 	return best_partner
 
 
+func _find_nearest_mana_orb():
+		"""Find the closest mana orb in the resource detection range.
+		Returns the nearest ManaOrb (StaticBody3D) or null if none found."""
+		var detection_area = boid.get_node_or_null("ResourceDetection")
+		if detection_area == null:
+			return null
+		
+		var best_orb = null
+		var best_distance = INF
+		# ManaOrbs are StaticBody3D nodes with a PickupArea child; detected via get_overlapping_bodies().
+		for body in detection_area.get_overlapping_bodies():
+			if body == boid:
+				continue
+			# Check for ManaOrb by type or by method presence (energy_amount) for compatibility.
+			var distance = boid.global_transform.origin.distance_to(body.global_transform.origin)
+			if distance < best_distance:
+				best_distance = distance
+				best_orb = body
+			return best_orb
+
+
 ## Helper: slot management and follower resolution
 ## These functions manage the two reserved follower slots for a leader. Followers claim
 ## a slot when they enter follower mode. Leaders consult these slots to determine
@@ -148,7 +202,7 @@ func _is_compatible(other: Boid) -> bool:
 func _set_wander_mode() -> void:
 	if current_mode == MODE_FOLLOWER:
 		return
-	if current_mode == "wander" and current_partner == null:
+	if current_mode == MODE_WANDER and current_partner == null:
 		return
 	current_mode = MODE_WANDER
 	current_partner = null
@@ -317,9 +371,9 @@ func _check_for_merge_from_leader() -> void:
 	
 	var left_follower = _get_follower_at_slot(SLOT_LEFT)
 	var right_follower = _get_follower_at_slot(SLOT_RIGHT)
-	print("11left: ", left_follower,"right: ", right_follower)
+	# print("11left: ", left_follower,"right: ", right_follower)
 	if left_follower != null and right_follower != null:
-		print("left: ", left_follower,"right: ", right_follower)
+		# print("left: ", left_follower,"right: ", right_follower)
 		if left_follower.level == 1 and right_follower.level == 1:
 			_perform_merge([boid, left_follower, right_follower])
 

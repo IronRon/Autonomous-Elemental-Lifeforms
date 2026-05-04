@@ -21,6 +21,16 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 @export var base_max_speed: float = 1.0
 @export var base_mass: float = 1.0
 
+# Combat / resource stats
+@export var attack_energy: int = 1
+@export var max_attack_energy: int = 3
+@export var health: int = 2
+
+# Detection radii (meters)
+@export var social_detection_radius: float = 10.0
+@export var resource_detection_radius: float = 20.0
+
+
 var _dynamic_material: StandardMaterial3D
 @onready var visual: MeshInstance3D = $Visual
 @onready var stats_node: Node = $LifeformStats
@@ -31,6 +41,18 @@ func _ready() -> void:
 	_apply_configuration()
 	_update_mesh_for_level()
 	_sync_stats_node()
+
+	# Apply configured detection radii to area collision shapes.
+	# DetectionArea is used for social/partner detection (forming groups).
+	var det = get_node_or_null("DetectionArea/CollisionShape3D")
+	if det and det.shape and det.shape.has_method("set"):
+		det.shape.radius = social_detection_radius
+
+	# ResourceDetection is used for finding mana orbs to seek and consume for energy.
+	var res = get_node_or_null("ResourceDetection/CollisionShape3D")
+	if res and res.shape and res.shape.has_method("set"):
+		res.shape.radius = resource_detection_radius
+	_update_attack_stats()
 
 
 func set_element_type(value: ElementType) -> void:
@@ -43,6 +65,33 @@ func set_level(value: int) -> void:
 	level = max(1, value)
 	_apply_configuration()
 	_update_mesh_for_level()
+	_update_attack_stats()
+
+
+func _update_attack_stats() -> void:
+	# Set defaults for health and max attack energy based on level.
+	# Level progression increases durability and energy capacity.
+	match level:
+		1:
+			max_attack_energy = 3
+			health = 2
+			# Ensure level-1 lifeforms always have at least 1 energy to enable seeking behavior.
+			attack_energy = max(attack_energy, 1)
+		2:
+			max_attack_energy = 5
+			health = 4
+			attack_energy = min(attack_energy, max_attack_energy)
+		_:
+			max_attack_energy = 8
+			health = 6
+			attack_energy = min(attack_energy, max_attack_energy)
+
+
+func add_attack_energy(amount: int) -> void:
+	# Gain attack energy from resource pickup (mana orbs).
+	# Clamped to [0, max_attack_energy].
+	attack_energy = clamp(attack_energy + amount, 0, max_attack_energy)
+
 
 
 func set_visual_color(value: Color) -> void:
