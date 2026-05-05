@@ -16,6 +16,8 @@ var boid
 @export var threat_detection_radius: float = 10.0  # Reuses DetectionArea for predator detection
 @export var level_fear_threshold: int = 0  # Flee if predator.level >= self.level + threshold
 @export var aggro_radius: float = 5.0  # When predator enters this radius, prey counter-attacks with pursuit
+@export var evolution_sound: AudioStream = preload("res://assets/sounds/Evolution.wav")
+@export var evolution_sound_volume_db: float = -3.0
 
 var _merge_check_timer: float = 0.0
 
@@ -797,6 +799,7 @@ func _perform_merge(group: Array, target_level: int) -> void:
 	
 	new_lifeform.global_position = new_pos
 	boid.get_parent().add_child(new_lifeform)
+	_play_evolution_sound(new_pos)
 	
 	# Clean up the 3 originals.
 	for lifeform in group:
@@ -816,3 +819,27 @@ func _apply_evolution_defaults(new_lifeform: Node, target_level: int) -> void:
 			new_lifeform.strength = 1.6
 			new_lifeform.attack_energy = 3
 			new_lifeform.health = 6
+
+
+func _play_evolution_sound(sound_position: Vector3) -> void:
+	if evolution_sound == null:
+		return
+
+	var parent = get_tree().current_scene
+	if parent == null and boid:
+		parent = boid.get_parent()
+	if parent == null:
+		return
+
+	var player = AudioStreamPlayer3D.new()
+	player.name = "EvolutionSound"
+	player.stream = evolution_sound
+	player.volume_db = evolution_sound_volume_db
+	player.unit_size = 12.0
+	player.max_distance = 50.0
+	parent.add_child(player)
+	player.global_position = sound_position
+	player.play()
+
+	var free_timer = get_tree().create_timer(evolution_sound.get_length() + 0.25)
+	free_timer.timeout.connect(Callable(player, "queue_free"))
