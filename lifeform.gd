@@ -203,6 +203,7 @@ func die() -> void:
 	var brain = get_node_or_null("LifeformBrain")
 	if brain and brain.has_method("on_lifeform_death"):
 		brain.on_lifeform_death()
+	_notify_simulation_manager("record_lifeform_death")
 	_play_death_sound()
 	_play_death_burst()
 	queue_free()
@@ -222,6 +223,12 @@ func _apply_collision_impulse(other: Boid) -> void:
 	var impulse = offset.normalized() * collision_impulse_strength
 	vel -= impulse
 	vel = vel.limit_length(max_speed * 1.5)
+
+
+func _notify_simulation_manager(method_name: String) -> void:
+	var manager = get_tree().get_first_node_in_group("simulation_manager")
+	if manager and manager.has_method(method_name):
+		manager.call(method_name)
 
 
 

@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://b7pkhyddppyy8" path="res://mana_orb.tscn" id="3_tlwt5"]
 [ext_resource type="Script" uid="uid://bbajmt60uepik" path="res://simulation_manager.gd" id="4_sim"]
 [ext_resource type="Script" uid="uid://c63ovhrs74lwf" path="res://background_music.gd" id="6_bgm_script"]
+[ext_resource type="Script" uid="uid://b2ahorqo6e22f" path="res://simulation_stats_ui.gd" id="7_stats_ui"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fj7yv"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -40,6 +41,27 @@ script = ExtResource("6_bgm_script")
 
 [node name="SimulationManager" type="Node" parent="." unique_id=197606733]
 script = ExtResource("4_sim")
+
+[node name="SimulationStatsUI" type="CanvasLayer" parent="." unique_id=655075660]
+script = ExtResource("7_stats_ui")
+
+[node name="StatsPanel" type="PanelContainer" parent="SimulationStatsUI" unique_id=731829724]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 260.0
+offset_bottom = 210.0
+
+[node name="MarginContainer" type="MarginContainer" parent="SimulationStatsUI/StatsPanel" unique_id=416022626]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="StatsLabel" type="Label" parent="SimulationStatsUI/StatsPanel/MarginContainer" unique_id=1695122702]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "SIMULATION"
 
 [node name="LifeformAnti1" parent="." unique_id=2104863254 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 7.5202923, 0)
@@ -86,7 +108,7 @@ visual_color = Color(0, 1, 0, 1)
 base_max_speed = 3.0
 
 [node name="LifeformWind7" parent="." unique_id=1153086315 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.8529364, -0.43664438, -0.28607896, -0.5040205, 0.83150285, 0.23359424, 0.13587788, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
+transform = Transform3D(-0.8529364, -0.4366444, -0.28607896, -0.5040205, 0.83150285, 0.23359422, 0.13587789, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)

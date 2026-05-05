@@ -799,6 +799,7 @@ func _perform_merge(group: Array, target_level: int) -> void:
 	
 	new_lifeform.global_position = new_pos
 	boid.get_parent().add_child(new_lifeform)
+	_notify_simulation_manager("record_evolution")
 	_play_evolution_sound(new_pos)
 	
 	# Clean up the 3 originals.
@@ -843,3 +844,9 @@ func _play_evolution_sound(sound_position: Vector3) -> void:
 
 	var free_timer = get_tree().create_timer(evolution_sound.get_length() + 0.25)
 	free_timer.timeout.connect(Callable(player, "queue_free"))
+
+
+func _notify_simulation_manager(method_name: String) -> void:
+	var manager = get_tree().get_first_node_in_group("simulation_manager")
+	if manager and manager.has_method(method_name):
+		manager.call(method_name)

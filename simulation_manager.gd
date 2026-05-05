@@ -23,9 +23,12 @@ extends Node
 
 var _rng := RandomNumberGenerator.new()
 var _mana_orb_relocation_timer: Timer
+var total_deaths: int = 0
+var total_evolutions: int = 0
 
 
 func _ready() -> void:
+	add_to_group("simulation_manager")
 	if random_seed == 0:
 		_rng.randomize()
 	else:
@@ -35,6 +38,8 @@ func _ready() -> void:
 
 
 func _start_simulation() -> void:
+	total_deaths = 0
+	total_evolutions = 0
 	var spawn_parent = get_node_or_null(spawn_parent_path)
 	if spawn_parent == null:
 		spawn_parent = get_parent()
@@ -226,3 +231,11 @@ func _element_name(element_type: int) -> String:
 			return "AntiMagic"
 		_:
 			return "Unknown"
+
+
+func record_lifeform_death() -> void:
+	total_deaths += 1
+
+
+func record_evolution() -> void:
+	total_evolutions += 1
