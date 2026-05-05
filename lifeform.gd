@@ -20,6 +20,8 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 
 @export var base_max_speed: float = 3.0
 @export var base_mass: float = 1.0
+@export var trail_enabled: bool = true:
+	set = set_trail_enabled
 
 # Combat / resource stats
 @export var attack_energy: int = 1
@@ -38,6 +40,7 @@ var _face_material: StandardMaterial3D
 var _accessory_material: StandardMaterial3D
 @onready var visual: MeshInstance3D = $Visual
 @onready var stats_node: Node = $LifeformStats
+@onready var trail_particles: GPUParticles3D = $TrailParticles
 @onready var left_eye: MeshInstance3D = $Visual/LeftEye
 @onready var right_eye: MeshInstance3D = $Visual/RightEye
 @onready var mouth: MeshInstance3D = $Visual/Mouth
@@ -57,6 +60,7 @@ func _ready() -> void:
 	_update_mesh_for_level()
 	_update_face()
 	_update_accessories()
+	_update_trail()
 	_sync_stats_node()
 
 	# Apply configured detection radii to area collision shapes.
@@ -78,6 +82,7 @@ func set_element_type(value: ElementType) -> void:
 	_apply_configuration()
 	_update_face()
 	_update_accessories()
+	_update_trail()
 
 
 func set_level(value: int) -> void:
@@ -86,6 +91,7 @@ func set_level(value: int) -> void:
 	_update_mesh_for_level()
 	_update_face()
 	_update_accessories()
+	_update_trail()
 	_update_attack_stats()
 
 
@@ -218,6 +224,11 @@ func set_speed_multiplier(value: float) -> void:
 	_apply_configuration()
 
 
+func set_trail_enabled(value: bool) -> void:
+	trail_enabled = value
+	_update_trail()
+
+
 func _apply_configuration() -> void:
 	# Stat modifiers directly shape motion and physical scale.
 	max_speed = base_max_speed * speed_multiplier
@@ -240,6 +251,7 @@ func _apply_configuration() -> void:
 
 	_update_face()
 	_update_accessories()
+	_update_trail()
 	_sync_stats_node()
 
 
@@ -545,3 +557,36 @@ func _accessory_color_for_element() -> Color:
 			return Color(0.35, 0.0, 0.5)
 		_:
 			return visual_color
+
+
+func _update_trail() -> void:
+	if not is_inside_tree():
+		return
+	if trail_particles == null:
+		trail_particles = get_node_or_null("TrailParticles")
+	if trail_particles == null:
+		return
+
+	trail_particles.emitting = trail_enabled
+	var material = trail_particles.process_material
+	if material is ParticleProcessMaterial:
+		material.color = _trail_color_for_element()
+
+
+func _trail_color_for_element() -> Color:
+	var color = visual_color
+	color.a = 0.45
+	match element_type:
+		ElementType.Fire:
+			return Color(1.0, 0.35, 0.05, 0.8)
+		ElementType.Wind:
+			return Color(0.55, 1.0, 0.45, 0.7)
+		ElementType.Water:
+			return Color(0.25, 0.65, 1.0, 0.75)
+		ElementType.Earth:
+			return Color(0.45, 0.28, 0.12, 0.7)
+		ElementType.AntiMagic:
+			return Color(0.6, 0.0, 0.9, 0.8)
+		_:
+			print("colour change!!")
+			return color
