@@ -18,7 +18,7 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 @export var speed_multiplier: float = 1.0:
 	set = set_speed_multiplier
 
-@export var base_max_speed: float = 3.0
+@export var base_max_speed: float = 4.0
 @export var base_mass: float = 1.0
 @export var trail_enabled: bool = true:
 	set = set_trail_enabled
@@ -27,12 +27,12 @@ enum ElementType { Fire, Wind, Water, Earth, AntiMagic }
 @export var attack_energy: int = 1
 @export var max_attack_energy: int = 3
 @export var health: int = 2
-@export var collision_impulse_strength: float = 4.0
+@export var collision_impulse_strength: float = 6.0
 var is_dead: bool = false
 
 # Detection radii (meters)
-@export var social_detection_radius: float = 20.0
-@export var resource_detection_radius: float = 20.0
+@export var social_detection_radius: float = 16.0
+@export var resource_detection_radius: float = 10.0
 
 
 var _dynamic_material: StandardMaterial3D

@@ -40,7 +40,6 @@ script = ExtResource("6_bgm_script")
 
 [node name="SimulationManager" type="Node" parent="." unique_id=197606733]
 script = ExtResource("4_sim")
-use_evolution_test_spawn = true
 
 [node name="LifeformAnti1" parent="." unique_id=2104863254 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 7.5202923, 0)
@@ -55,6 +54,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.26973248, 7.577716, 0)
 collision_mask = 2
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
+base_max_speed = 3.0
 health = 10
 
 [node name="LifeformAnti3" parent="." unique_id=1362573189 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
@@ -62,36 +62,42 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3620176, 3.4608684, -8.173
 collision_mask = 2
 element_type = 4
 visual_color = Color(0, 0, 0, 1)
+base_max_speed = 3.0
 
 [node name="LifeformWind4" parent="." unique_id=864296901 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, 18.969797, 4.5991735, 0)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
+base_max_speed = 3.0
 
 [node name="LifeformWind5" parent="." unique_id=2116594744 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, -13.024401, 15.379304, -9.906914)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
+base_max_speed = 3.0
 
 [node name="LifeformWind6" parent="." unique_id=628143915 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.28287715, 0, 0.95915616, 0, 1, 0, -0.95915616, 0, -0.28287715, -16.043999, 4.4091306, 7.1523304)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
+base_max_speed = 3.0
 
 [node name="LifeformWind7" parent="." unique_id=1153086315 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.8529364, -0.43664438, -0.28607896, -0.5040205, 0.83150285, 0.23359424, 0.13587788, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
+transform = Transform3D(-0.8529364, -0.4366444, -0.28607896, -0.5040205, 0.83150285, 0.23359422, 0.13587789, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
+base_max_speed = 3.0
 
 [node name="LifeformWind8" parent="." unique_id=1685396382 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(-0.99495804, 0, 0.10029226, 0, 1, 0, -0.10029226, 0, -0.99495804, 9.147587, 5.2642574, 6.9043407)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)
+base_max_speed = 3.0
 
 [node name="ManaOrb" parent="." unique_id=872283028 instance=ExtResource("3_tlwt5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.080833, 7.4219465, -8.894438)

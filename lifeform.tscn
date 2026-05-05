@@ -11,17 +11,17 @@
 [ext_resource type="Script" uid="uid://h5wrviq7ex0m" path="res://behaviors/offset_pursue.gd" id="10_8xgk2"]
 [ext_resource type="Script" uid="uid://dnntj3csepgtt" path="res://lifeform_brain.gd" id="10_utol8"]
 [ext_resource type="Script" uid="uid://c6pi6b3oupr8l" path="res://lifeform_stats.gd" id="11_sqh1m"]
-[ext_resource type="AudioStream" path="res://assets/sounds/Death.wav" id="12_death_sound"]
-[ext_resource type="AudioStream" path="res://assets/sounds/Combat_collision.wav" id="13_collision_sound"]
+[ext_resource type="AudioStream" uid="uid://c7ankew3xfsnx" path="res://assets/sounds/Death.wav" id="12_death_sound"]
+[ext_resource type="AudioStream" uid="uid://dige4jxd64p7i" path="res://assets/sounds/Combat_collision.wav" id="13_collision_sound"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_x6ac5"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sqh1m"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yugsa"]
 albedo_color = Color(1, 0.3019608, 1, 1)
 
-[sub_resource type="SphereMesh" id="SphereMesh_aengs"]
+[sub_resource type="SphereMesh" id="SphereMesh_2f8je"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yugsa"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4csf1"]
 albedo_color = Color(0, 0, 0, 1)
 emission_energy_multiplier = 0.8
 
@@ -41,7 +41,7 @@ material = SubResource("StandardMaterial3D_ndjnu")
 radius = 0.05
 height = 0.2
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2f8je"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ttbyj"]
 albedo_color = Color(1, 0.35, 0.02, 1)
 emission_enabled = true
 emission = Color(1, 0.35, 0.02, 1)
@@ -69,12 +69,12 @@ bottom_radius = 0.06
 height = 0.22
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_cxs1n"]
-radius = 10.0
+radius = 16.0
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_resr"]
-radius = 8.0
+radius = 10.0
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_4csf1"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_wjors"]
 emission_shape = 1
 emission_sphere_radius = 0.12
 direction = Vector3(0, 0, 1)
@@ -95,7 +95,7 @@ material = SubResource("StandardMaterial3D_trail_particle")
 radius = 0.07
 height = 0.14
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ttbyj"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_utol8"]
 emission_shape = 1
 emission_sphere_radius = 0.25
 direction = Vector3(0, 1, 0)
@@ -116,7 +116,7 @@ material = SubResource("StandardMaterial3D_death_burst_particle")
 radius = 0.08
 height = 0.16
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_collision_burst"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_x6ac5"]
 emission_shape = 1
 emission_sphere_radius = 0.14
 direction = Vector3(0, 1, 0)
@@ -141,39 +141,36 @@ height = 0.1
 collision_mask = 3
 script = ExtResource("1_hokl5")
 collision_impulse_strength = 8.0
-social_detection_radius = 10.0
-resource_detection_radius = 8.0
 mass = 1.0
 max_speed = 3.0
-banking = 0.5
-damping = 0.5
+draw_gizmos = false
 metadata/_custom_type_script = "uid://cmw6n17mebkcx"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=749505881]
 shape = SubResource("SphereShape3D_x6ac5")
 
 [node name="Visual" type="MeshInstance3D" parent="." unique_id=158636613]
-material_override = SubResource("StandardMaterial3D_sqh1m")
-mesh = SubResource("SphereMesh_aengs")
+material_override = SubResource("StandardMaterial3D_yugsa")
+mesh = SubResource("SphereMesh_2f8je")
 
 [node name="LeftEye" type="MeshInstance3D" parent="Visual" unique_id=654054965]
 transform = Transform3D(1.3204993, 0.12474702, 0, -0.2806808, 0.5868886, 0, 0, 0, 0.9, -0.14, 0.24, 0.49)
-material_override = SubResource("StandardMaterial3D_yugsa")
+material_override = SubResource("StandardMaterial3D_4csf1")
 mesh = SubResource("SphereMesh_yugsa")
 
 [node name="RightEye" type="MeshInstance3D" parent="Visual" unique_id=1552292069]
 transform = Transform3D(1.3204993, -0.12474702, 0, 0.2806808, 0.5868886, 0, 0, 0, 0.9, 0.14, 0.24, 0.49)
-material_override = SubResource("StandardMaterial3D_yugsa")
+material_override = SubResource("StandardMaterial3D_4csf1")
 mesh = SubResource("SphereMesh_yugsa")
 
 [node name="Mouth" type="MeshInstance3D" parent="Visual" unique_id=1793327591]
 transform = Transform3D(-0.043624327, -0.74954313, 0, 1.2492385, -0.026174597, 0, 0, 0, 1, 0, -0.08, 0.5)
-material_override = SubResource("StandardMaterial3D_yugsa")
+material_override = SubResource("StandardMaterial3D_4csf1")
 mesh = SubResource("CapsuleMesh_2f8je")
 
 [node name="FireCrest" type="MeshInstance3D" parent="Visual" unique_id=830513020]
 transform = Transform3D(1, 0, 0, 0, 1.2226845, 0.18712053, 0, -0.25988963, 0.8803328, 0, 0.58, 0.02)
-material_override = SubResource("StandardMaterial3D_2f8je")
+material_override = SubResource("StandardMaterial3D_ttbyj")
 mesh = SubResource("CylinderMesh_face_fire")
 
 [node name="WindWingLeft" type="MeshInstance3D" parent="Visual" unique_id=347394143]
@@ -274,7 +271,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
 amount = 18
 lifetime = 0.55
 preprocess = 0.55
-process_material = SubResource("ParticleProcessMaterial_4csf1")
+process_material = SubResource("ParticleProcessMaterial_wjors")
 draw_pass_1 = SubResource("SphereMesh_ndjnu")
 
 [node name="DeathBurstParticles" type="GPUParticles3D" parent="." unique_id=943946390]
@@ -283,7 +280,7 @@ amount = 32
 lifetime = 0.7
 one_shot = true
 explosiveness = 1.0
-process_material = SubResource("ParticleProcessMaterial_ttbyj")
+process_material = SubResource("ParticleProcessMaterial_utol8")
 draw_pass_1 = SubResource("SphereMesh_death_burst")
 
 [node name="CollisionBurstParticles" type="GPUParticles3D" parent="." unique_id=1715188868]
@@ -292,16 +289,15 @@ amount = 12
 lifetime = 0.35
 one_shot = true
 explosiveness = 1.0
-process_material = SubResource("ParticleProcessMaterial_collision_burst")
+process_material = SubResource("ParticleProcessMaterial_x6ac5")
 draw_pass_1 = SubResource("SphereMesh_collision_burst")
 
-[node name="DeathSound" type="AudioStreamPlayer3D" parent="."]
+[node name="DeathSound" type="AudioStreamPlayer3D" parent="." unique_id=1976517336]
 stream = ExtResource("12_death_sound")
 volume_db = -3.0
-unit_size = 10.0
 max_distance = 45.0
 
-[node name="CollisionSound" type="AudioStreamPlayer3D" parent="."]
+[node name="CollisionSound" type="AudioStreamPlayer3D" parent="." unique_id=2126439450]
 stream = ExtResource("13_collision_sound")
 volume_db = -6.0
 unit_size = 8.0

@@ -9,13 +9,13 @@ var boid
 @export var same_level_only: bool = true
 @export var allow_mixed_level_3_merge: bool = true
 @export var max_evolution_level: int = 3
-@export var formation_offset_x: float = 1.5
-@export var formation_offset_z: float = -1.5
+@export var formation_offset_x: float = 1
+@export var formation_offset_z: float = -1
 @export var lifeform_scene_path: String = "res://lifeform.tscn"
 @export var merge_check_interval: float = 3.0
 @export var threat_detection_radius: float = 10.0  # Reuses DetectionArea for predator detection
 @export var level_fear_threshold: int = 0  # Flee if predator.level >= self.level + threshold
-@export var aggro_radius: float = 5  # When predator enters this radius, prey counter-attacks with pursuit
+@export var aggro_radius: float = 5.0  # When predator enters this radius, prey counter-attacks with pursuit
 
 var _merge_check_timer: float = 0.0
 
