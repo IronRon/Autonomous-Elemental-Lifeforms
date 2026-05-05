@@ -20,11 +20,15 @@ extends Node
 @export var spawn_blocking_collision_mask: int = 2
 @export var max_spawn_attempts: int = 40
 @export var random_seed: int = 0
+@export var player_mana_spawn_enabled: bool = true
+@export var player_mana_spawn_distance: float = 15.0
+@export var player_mana_spawn_clearance_radius: float = 2.0
 
 var _rng := RandomNumberGenerator.new()
 var _mana_orb_relocation_timer: Timer
 var total_deaths: int = 0
 var total_evolutions: int = 0
+var _player_spawned_mana_count: int = 0
 
 
 func _ready() -> void:
@@ -35,6 +39,17 @@ func _ready() -> void:
 		_rng.seed = random_seed
 
 	call_deferred("_start_simulation")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not player_mana_spawn_enabled:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
+		_spawn_player_mana_orb_in_front_of_camera()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_spawn_player_mana_orb_from_cursor(event.position)
+		get_viewport().set_input_as_handled()
 
 
 func _start_simulation() -> void:
@@ -159,6 +174,61 @@ func _spawn_mana_orb(spawn_parent: Node, index: int) -> void:
 	mana_orb.add_to_group("mana_orbs")
 	mana_orb.position = _random_safe_mana_orb_position()
 	spawn_parent.add_child(mana_orb)
+
+
+func _spawn_player_mana_orb_in_front_of_camera() -> void:
+	var camera = get_viewport().get_camera_3d()
+	if camera == null:
+		return
+	var spawn_position = camera.global_position - camera.global_transform.basis.z * player_mana_spawn_distance
+	_spawn_player_mana_orb_at(_safe_player_mana_position(spawn_position))
+
+
+func _spawn_player_mana_orb_from_cursor(cursor_position: Vector2) -> void:
+	var camera = get_viewport().get_camera_3d()
+	if camera == null:
+		return
+	var origin = camera.project_ray_origin(cursor_position)
+	var direction = camera.project_ray_normal(cursor_position)
+	var spawn_position = origin + direction * player_mana_spawn_distance
+	_spawn_player_mana_orb_at(_safe_player_mana_position(spawn_position))
+
+
+func _spawn_player_mana_orb_at(spawn_position: Vector3) -> void:
+	if mana_orb_scene == null:
+		return
+	var spawn_parent = get_node_or_null(spawn_parent_path)
+	if spawn_parent == null:
+		spawn_parent = get_parent()
+	if spawn_parent == null:
+		return
+
+	var mana_orb = mana_orb_scene.instantiate()
+	if mana_orb == null:
+		return
+
+	_player_spawned_mana_count += 1
+	mana_orb.name = "PlayerManaOrb" + str(_player_spawned_mana_count)
+	mana_orb.add_to_group("mana_orbs")
+	mana_orb.global_position = spawn_position
+	spawn_parent.add_child(mana_orb)
+
+
+func _safe_player_mana_position(preferred_position: Vector3) -> Vector3:
+	if not _is_spawn_position_blocked(preferred_position, player_mana_spawn_clearance_radius):
+		return preferred_position
+
+	for attempt in range(max_spawn_attempts):
+		var offset = Vector3(
+			_rng.randf_range(-player_mana_spawn_clearance_radius, player_mana_spawn_clearance_radius),
+			_rng.randf_range(-player_mana_spawn_clearance_radius, player_mana_spawn_clearance_radius),
+			_rng.randf_range(-player_mana_spawn_clearance_radius, player_mana_spawn_clearance_radius)
+		) * 2.0
+		var candidate = preferred_position + offset
+		if not _is_spawn_position_blocked(candidate, player_mana_spawn_clearance_radius):
+			return candidate
+
+	return preferred_position
 
 
 func _random_spawn_position(height: float = spawn_height) -> Vector3:
