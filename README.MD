@@ -50,6 +50,64 @@ Evolution works by grouping three compatible same-element lifeforms. A leader re
 
 Combat is mainly between AntiMagic and non-AntiMagic lifeforms. AntiMagic creatures pursue normal elements, while normal elements flee or counter-attack when a predator gets close. Collision damage uses the lifeforms' attack energy, and deaths trigger sound, particles, and simulation statistics.
 
+# How the project matches the assignment brief
+
+The brief asks for an autonomous artificial lifeform with identity, personality, interaction with its surroundings, interaction with the player, and behaviour that helps convince the viewer it is alive. This project addresses that by treating the world as a small magical ecosystem rather than a single scripted character.
+
+The lifeforms have their own goals and needs. They search for mana when low on attack energy, wander when idle, detect nearby allies and predators, flee from stronger AntiMagic lifeforms, pursue enemies, form groups, and evolve when enough compatible lifeforms gather. These behaviours happen automatically through each lifeform's brain rather than through direct player control.
+
+The creatures also have identity and personality through elemental types. Fire, Wind, Water, Earth, and AntiMagic lifeforms have different colours, face layouts, accessories, particles, and roles in the simulation. AntiMagic is more predatory, while the other elements behave more like social creatures trying to survive and evolve.
+
+The player can affect the ecosystem without taking full control of it. Spawning mana orbs, attract pulses, and repel pulses gives the player influence, but the lifeforms still decide how to react using their normal steering behaviours.
+
+# Autonomous agents techniques used
+
+The project uses several autonomous agent techniques from the assignment brief:
+
+- Steering behaviours: wander, seek, flee, pursue, arrive, offset pursue, obstacle avoidance, and arena constraint.
+- Boid-style movement: each lifeform inherits from the Boid controller and combines steering forces to move naturally.
+- Finite State Machine style brain: `lifeform_brain.gd` switches between named behaviour modes such as wander, seek, leader, follower, flee, pursue, counter-attack, attract, and repel.
+- Emergent group behaviour: compatible lifeforms form leader/follower groups and merge into evolved forms.
+- Resource-driven behaviour: mana orbs create a need/reward system where lifeforms seek resources to improve attack energy.
+- Predator/prey behaviour: AntiMagic lifeforms hunt other elements, while normal elements react by fleeing or counter-attacking.
+
+# Visuals, sound, and believability
+
+The assignment rewards visual and sound polish as part of making the lifeform feel alive. This project uses simple but readable procedural visuals instead of relying on one imported character model.
+
+Each lifeform has a coloured body, face, eyebrows, eye shine, mouth details, element-specific accessories, trails, death bursts, and collision bursts. The level system changes the body shape from sphere to box to capsule, making evolution visible during the simulation.
+
+Sound is used for feedback and atmosphere. Mana pickup, evolution, combat collision, death, and background music all have audio feedback. Mana orbs also pulse and glow so resources feel active rather than static.
+
+# Interactivity
+
+The player does not control a single creature directly, because the main focus is autonomous behaviour. Instead, the player influences the world:
+
+- Mana orbs can be spawned to feed nearby lifeforms.
+- Attract pulses temporarily pull nearby lifeforms toward a point.
+- Repel pulses temporarily push nearby lifeforms away.
+- The observer camera lets the player inspect the simulation from different angles.
+
+This keeps the lifeforms independent while still giving the player a meaningful way to affect the outcome.
+
+# Use of SOLID principles
+
+The code is split into focused scripts and scenes so each major responsibility is separated.
+
+- Single Responsibility Principle: `lifeform.gd` manages one lifeform's stats, visuals, combat feedback, and death handling; `lifeform_brain.gd` handles behaviour decisions; `simulation_manager.gd` handles spawning and global simulation state; `mana_orb.gd` handles resource pickup; `simulation_stats_ui.gd` handles display.
+- Open/Closed Principle: new behaviour modes or element types can be added by extending the existing brain/state structure and element visual mappings without rewriting the whole simulation.
+- Liskov Substitution Principle: lifeforms extend the existing `Boid` type and continue to work with the inherited steering behaviour system.
+- Interface Segregation Principle: scripts communicate through small methods such as `add_attack_energy`, `on_orb_picked`, `record_evolution`, and `apply_player_influence` rather than one large shared manager interface.
+- Dependency Inversion Principle: scenes are connected through exported `PackedScene`, `NodePath`, groups, and Godot nodes rather than hard-coding every object instance. For example, `SimulationManager` exports the lifeform and mana orb scenes, and lifeforms notify the manager through the `simulation_manager` group.
+
+The project is not perfectly SOLID, because `lifeform.gd` still has several responsibilities around visuals, stats, combat, and effects. However, the overall structure separates the main systems enough that the project can be extended without having to rewrite everything in one script.
+
+# Complexity and system design
+
+The project contains several interacting systems rather than a single animated object. The main systems are lifeform visuals/stats, autonomous brain states, steering behaviours, evolution, resource seeking, combat, player influence, safe spawning, mana relocation, audio/particles, UI statistics, and camera controls.
+
+The most complex part is the behaviour selection and evolution logic. Lifeforms must choose between competing needs such as seeking mana, fleeing predators, pursuing prey, following a leader, leading a group, merging, and reacting to player pulses. The result is not a fixed animation sequence; different runs can produce different outcomes depending on spawn positions, mana placement, and collisions.
+
 # List of classes/assets in the project
 
 | Class/asset | Source |
@@ -69,11 +127,9 @@ Combat is mainly between AntiMagic and non-AntiMagic lifeforms. AntiMagic creatu
 | Steering behaviour scripts in `behaviors/` such as `boid.gd`, `wander.gd`, `seek.gd`, `Flee.gd`, `pursue.gd`, `offset_pursue.gd`, `avoidance.gd`, `arrive.gd`, and `constrain.gd` | Modified from / based on the `skooter500/hands` behaviours branch starter project |
 | Procedural lifeform body meshes, faces, eyebrows, eyes, mouths, horns, wings, crest, droplets, pebbles, trails, bursts, and player pulse visuals | Self generated in Godot using built-in meshes and materials |
 | KayKit Space Base Bits environment models and texture in `addons/kaykit_space_base_bits/` | From KayKit Space Base Bits by Kay Lousberg, CC0 |
-| Godot XR Tools plugin in `addons/godot-xr-tools/` | From Godot XR Tools, MIT licensed |
-| Hand Pose Detector plugin in `addons/hand_pose_detector/` | External addon, MIT licensed |
 | Debug Draw 3D plugin in `addons/debug_draw_3d/` | External addon, MIT licensed |
 | Godot OpenXR Vendors plugin in `addons/godotopenxrvendors/` | External OpenXR vendor plugin, licenses included in folder |
-| `assets/sounds/*.wav` | Project audio assets stored locally in the repo |
+| `assets/sounds/*.wav` | Sound effects and background audio from [Mixkit](https://mixkit.co/) |
 | Shader/material resources in `materials/` and `assets/wireframe-material.gdshader` | Mix of project materials and external shader references where noted in file comments, including MIT/CC0 shader sources |
 | Fonts in `fonts/` and soundfont files in `assets/` | External/local assets included in the project repository |
 | Documentation files in `docs/`, `CURRENT_FUNCTIONALITY.md`, and `MODULAR_BOID_GUIDE.md` | Self written project documentation |
@@ -82,8 +138,8 @@ Combat is mainly between AntiMagic and non-AntiMagic lifeforms. AntiMagic creatu
 
 * [skooter500/hands - behaviors branch](https://github.com/skooter500/hands/tree/behaviors)
 * [KayKit Space Base Bits by Kay Lousberg](https://kaylousberg.com/)
-* [Godot XR Tools](https://github.com/GodotVR/godot-xr-tools)
 * [Debug Draw 3D for Godot](https://github.com/DmitriySalnikov/godot_debug_draw_3d)
+* [Mixkit sound effects and music](https://mixkit.co/)
 * [Godot Engine documentation](https://docs.godotengine.org/)
 * Inigo Quilez shader references noted in the material shader comments
 
