@@ -6,7 +6,7 @@ Student Number: C22309236
 
 Class Group: TU856
 
-Video: [![Video](https://www.youtube.com/watch?v=Kn3jiWXXXIk)](https://www.youtube.com/watch?v=Kn3jiWXXXIk)
+Video: [![Video](http://img.youtube.com/vi/Kn3jiWXXXIk/0.jpg)](https://www.youtube.com/watch?v=Kn3jiWXXXIk)
 
 # Description of the project
 
