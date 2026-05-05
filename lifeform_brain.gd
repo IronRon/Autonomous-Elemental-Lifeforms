@@ -50,10 +50,14 @@ func _physics_process(delta):
 	if boid == null:
 		return
 
+	if boid.element_type == boid.ElementType.AntiMagic and (current_mode == MODE_FLEE or current_mode == MODE_COUNTER_ATTACK):
+		_set_wander_mode()
+		return
+
 	# Check for threats (predators) in DetectionArea - prioritize threat avoidance.
 	# Do not override active counter-attack mode here; let that state decide when to
 	# return to flee based on the aggro radius.
-	if current_mode != MODE_FLEE and current_mode != MODE_PURSUE and current_mode != MODE_COUNTER_ATTACK:
+	if boid.element_type != boid.ElementType.AntiMagic and current_mode != MODE_FLEE and current_mode != MODE_PURSUE and current_mode != MODE_COUNTER_ATTACK:
 		var predator = _find_nearest_predator()
 		if predator != null:
 			_set_flee_mode(predator)
@@ -248,6 +252,9 @@ func _find_nearest_predator() -> Boid:
 	Returns the predator (Boid) or null if none found. Threat determined by:
 	- Must be anti-magic element type
 	- Must be equal or higher level than self (adjusted by level_fear_threshold)"""
+	if boid.element_type == boid.ElementType.AntiMagic:
+		return null
+
 	var detection_area = boid.get_node_or_null("DetectionArea")
 	if detection_area == null:
 		return null
@@ -282,6 +289,9 @@ func _find_nearest_predator() -> Boid:
 func _find_nearest_prey() -> Boid:
 	"""Find the closest non-anti-magic lifeform in detection range for this anti-magic predator to pursue.
 	Returns the prey (Boid) or null if none found. Only valid when called on anti-magic lifeforms."""
+	if boid.element_type != boid.ElementType.AntiMagic:
+		return null
+
 	var detection_area = boid.get_node_or_null("DetectionArea")
 	if detection_area == null:
 		return null
@@ -406,7 +416,11 @@ func _set_follower_mode(partner: Boid) -> void:
 func _set_pursue_mode(prey: Boid) -> void:
 	"""Enter pursuit mode targeting the given prey lifeform.
 	Anti-magic lifeforms use Pursue behavior to chase down non-anti-magic targets."""
+	if boid.element_type != boid.ElementType.AntiMagic:
+		return
 	if prey == null:
+		return
+	if prey.element_type == boid.ElementType.AntiMagic:
 		return
 	
 	if current_mode == MODE_PURSUE and current_prey == prey:
@@ -426,6 +440,8 @@ func _set_pursue_mode(prey: Boid) -> void:
 func _set_flee_mode(threat: Boid) -> void:
 	"""Enter flee mode to escape from the given predator lifeform.
 	Uses Flee behavior to maintain distance from anti-magic threats."""
+	if boid.element_type == boid.ElementType.AntiMagic:
+		return
 	if threat == null:
 		return
 	
@@ -446,6 +462,8 @@ func _set_flee_mode(threat: Boid) -> void:
 func _set_counter_attack_mode(threat: Boid) -> void:
 	"""Enter counter-attack mode when predator gets too close (within aggro_radius).
 	Uses Pursue behavior to chase and force collision, triggering combat impulse separation."""
+	if boid.element_type == boid.ElementType.AntiMagic:
+		return
 	if threat == null:
 		return
 	
@@ -518,6 +536,9 @@ func _pursue_prey_only() -> void:
 	
 	# If prey is gone or no longer a valid target, return to wander.
 	if not is_instance_valid(current_prey):
+		_set_wander_mode()
+		return
+	if current_prey.element_type == boid.ElementType.AntiMagic:
 		_set_wander_mode()
 		return
 	
