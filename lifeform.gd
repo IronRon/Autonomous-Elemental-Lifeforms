@@ -46,6 +46,8 @@ var _collision_burst_material_is_unique: bool = false
 @onready var trail_particles: GPUParticles3D = $TrailParticles
 @onready var death_burst_particles: GPUParticles3D = $DeathBurstParticles
 @onready var collision_burst_particles: GPUParticles3D = $CollisionBurstParticles
+@onready var death_sound: AudioStreamPlayer3D = $DeathSound
+@onready var collision_sound: AudioStreamPlayer3D = $CollisionSound
 @onready var left_eye: MeshInstance3D = $Visual/LeftEye
 @onready var right_eye: MeshInstance3D = $Visual/RightEye
 @onready var mouth: MeshInstance3D = $Visual/Mouth
@@ -164,6 +166,7 @@ func resolve_collision_with(other: Boid) -> void:
 		return
 
 	var collision_point = (global_position + other.global_position) * 0.5
+	_play_collision_sound(collision_point)
 	_play_collision_burst(collision_point)
 	if other.has_method("_play_collision_burst"):
 		other._play_collision_burst(collision_point)
@@ -200,6 +203,7 @@ func die() -> void:
 	var brain = get_node_or_null("LifeformBrain")
 	if brain and brain.has_method("on_lifeform_death"):
 		brain.on_lifeform_death()
+	_play_death_sound()
 	_play_death_burst()
 	queue_free()
 
@@ -666,6 +670,22 @@ func _play_death_burst() -> void:
 	free_timer.timeout.connect(Callable(burst, "queue_free"))
 
 
+func _play_death_sound() -> void:
+	if death_sound == null:
+		death_sound = get_node_or_null("DeathSound")
+	if death_sound == null or death_sound.stream == null:
+		return
+
+	var sound = death_sound
+	death_sound = null
+	sound.reparent(_get_effect_parent(), true)
+	sound.global_position = global_position
+	sound.play()
+
+	var free_timer = get_tree().create_timer(sound.stream.get_length() + 0.25)
+	free_timer.timeout.connect(Callable(sound, "queue_free"))
+
+
 func _play_collision_burst(collision_point: Vector3) -> void:
 	if collision_burst_particles == null:
 		collision_burst_particles = get_node_or_null("CollisionBurstParticles")
@@ -691,6 +711,24 @@ func _play_collision_burst(collision_point: Vector3) -> void:
 
 	var free_timer = get_tree().create_timer(burst.lifetime + 0.25)
 	free_timer.timeout.connect(Callable(burst, "queue_free"))
+
+
+func _play_collision_sound(collision_point: Vector3) -> void:
+	if collision_sound == null:
+		collision_sound = get_node_or_null("CollisionSound")
+	if collision_sound == null or collision_sound.stream == null:
+		return
+
+	var sound = collision_sound.duplicate() as AudioStreamPlayer3D
+	if sound == null:
+		return
+
+	_get_effect_parent().add_child(sound)
+	sound.global_position = collision_point
+	sound.play()
+
+	var free_timer = get_tree().create_timer(sound.stream.get_length() + 0.25)
+	free_timer.timeout.connect(Callable(sound, "queue_free"))
 
 
 func _get_effect_parent() -> Node:

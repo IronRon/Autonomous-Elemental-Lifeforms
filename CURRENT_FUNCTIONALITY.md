@@ -41,6 +41,8 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - `TrailParticles` (`GPUParticles3D`)
 - `DeathBurstParticles` (`GPUParticles3D`)
 - `CollisionBurstParticles` (`GPUParticles3D`)
+- `DeathSound` (`AudioStreamPlayer3D`) with death audio stream
+- `CollisionSound` (`AudioStreamPlayer3D`) with collision audio stream
 
 ## World / Environment (`world.tscn`)
 - Main world scene instances a separate `environment.tscn` scene.
@@ -175,11 +177,17 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - Root node: `StaticBody3D` with attached script `mana_orb.gd`.
 - Mana orb root is in the `mana_orbs` group.
 - Mana orb root collision layer is layer 3.
-- Child node: `PickupArea` (Area3D) with collision shape for detecting lifeforms.
+- Child nodes:
+  - `PickupArea` (Area3D) with collision shape for detecting lifeforms.
+  - `GlowLight` (OmniLight3D) for dynamic glow effect.
+  - `MeshInstance3D` (orb mesh with glowing material).
+  - `OutlineMesh` (optional outline for pickup effect).
+  - `PickupSound` (AudioStreamPlayer3D) for pickup audio.
 - When a lifeform body enters the PickupArea:
   1. Mana orb notifies the lifeform's brain via `on_orb_picked(self)`
   2. Lifeform gains energy via `add_attack_energy(energy_amount)`
-  3. Mana orb frees itself
+  3. Pickup animation plays (see below)
+  4. Mana orb frees itself after sound finishes
 - Lifeforms detect orbs using a separate `ResourceDetection` area with configurable `resource_detection_radius`.
 - `ResourceDetection` only masks mana-orb layer 3, so it no longer mistakes other lifeforms for resources.
 - `_find_nearest_mana_orb()` filters targets to actual `ManaOrb` instances and scans all overlapping orbs before choosing the nearest.
@@ -188,6 +196,25 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `Constrain` and `Avoidance` remain active during seek.
   - Stays in `MODE_SEEK` until orb is picked or freed.
   - Returns to `MODE_WANDER` after pickup.
+
+### Mana Orb Idle Animation (Implemented)
+- Orbs continuously pulse with smooth scale and glow animations:
+  - **Scale pulse:** oscillates ±12% based on `pulse_scale_amount` (configurable).
+  - **Glow pulse:** light energy and emission multiplier pulse to 75%-125% of base glow value.
+  - **Speed:** pulse frequency controlled by `pulse_speed` export (default: 3.0).
+- Glow light (`GlowLight`) dynamically illuminates surroundings and pulses in sync with the orb mesh emission.
+- Orb material emission color is cyan-blue (0.25, 0.8, 1.0) for visual distinction.
+
+### Mana Orb Pickup Animation & Sound (Implemented)
+When a lifeform collects an orb:
+1. **Collision stop:** pickup area is disabled and collision shape is turned off immediately.
+2. **Flash boost:** glow light and emission energy brighten to 3x for visual pop.
+3. **Scale expand:** orb grows to 1.8x its base scale over `pickup_flash_time` (0.22s by default).
+4. **Outline reveal:** outline mesh appears and smoothly fades out as main mesh fades to transparent.
+5. **Pickup sound:** `PickupSound` plays (configurable audio stream).
+6. **Fade to disappear:** orb waits for sound to finish playing, then fades completely and is freed.
+- Tweens are set to parallel to animate all effects simultaneously during the flash phase.
+- Orb removal is deferred until after pickup sound completes, ensuring audio plays in full.
 
 ## Simulation Manager (`simulation_manager.gd`) (Implemented)
 - `SimulationManager` is a world-level node in `world.tscn`.
@@ -443,11 +470,30 @@ Combat damage is resolved using **slide collision detection** from `move_and_sli
      - Brain cleanup called for both.
    - Both are queued for freeing, but dead state prevents further collisions/damage.
 
+## Lifeform Sound Effects (Implemented)
+- Each lifeform has two audio nodes:
+  - `DeathSound`: Plays when lifeform dies (health reaches 0).
+  - `CollisionSound`: Plays when lifeform collides with another lifeform during combat.
+- Sound nodes are instances of `AudioStreamPlayer3D` with assigned audio streams (e.g., `res://assets/sounds/Death.wav`, `res://assets/sounds/Combat_collision.wav`).
+
+### Death Sound (Implemented)
+- Triggered by `_play_death_sound()` when lifeform enters the `die()` state.
+- Sound is reparented to the current scene so it continues playing even after the lifeform is freed.
+- Sound position is set to the lifeform's position at time of death.
+- After sound finishes playing plus a 0.25s buffer, the sound node is freed.
+
+### Collision Sound (Implemented)
+- Triggered by `_play_collision_sound(collision_point)` when two lifeforms collide during combat.
+- A duplicate of the `CollisionSound` node is created (to allow multiple collision sounds simultaneously).
+- Sound is positioned at the collision point in world space.
+- After sound finishes playing plus a 0.25s buffer, the duplicated sound node is freed.
+- This creates an immersive audio feedback for combat interactions without blocking other sounds.
+
 ## What Is Not Implemented Yet
 
 - **Population Tracking / Win Conditions:** Faction counts, dominant element detection, simulation end state.
 - **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
 - **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.
 - **Advanced Environment Navigation:** More precise ground-aware placement, nav/pathfinding, or obstacle-aware target selection.
-- **Combat Sound Effects:** Collision, death, pickup, and evolution sounds.
 - **Advanced Evolution Visuals:** Distinct authored meshes/models for level-2 and level-3 elemental evolutions.
+- **Evolution Sounds:** Audio for lifeform merging and level-up events.
