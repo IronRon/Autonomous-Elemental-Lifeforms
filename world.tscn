@@ -40,6 +40,7 @@ script = ExtResource("6_bgm_script")
 
 [node name="SimulationManager" type="Node" parent="." unique_id=197606733]
 script = ExtResource("4_sim")
+use_evolution_test_spawn = true
 
 [node name="LifeformAnti1" parent="." unique_id=2104863254 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 7.5202923, 0)
@@ -81,7 +82,7 @@ element_type = 1
 visual_color = Color(0, 1, 0, 1)
 
 [node name="LifeformWind7" parent="." unique_id=1153086315 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
-transform = Transform3D(-0.8529364, -0.4366444, -0.28607896, -0.5040205, 0.83150285, 0.23359422, 0.13587789, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
+transform = Transform3D(-0.8529364, -0.43664438, -0.28607896, -0.5040205, 0.83150285, 0.23359424, 0.13587788, 0.3434307, -0.92929673, 11.197908, 9.711781, 0)
 collision_mask = 2
 element_type = 1
 visual_color = Color(0, 1, 0, 1)

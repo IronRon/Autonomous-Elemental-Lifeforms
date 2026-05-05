@@ -305,7 +305,10 @@ func _color_for_element(value: ElementType) -> Color:
 func _update_mesh_for_level() -> void:
 	# Swap mesh based on level: sphere for level 1, cube for level 2, capsule for level 3+.
 	if visual == null:
+		visual = get_node_or_null("Visual")
+	if visual == null:
 		return
+	_clear_evolution_visual_root()
 	
 	match level:
 		1:
@@ -320,6 +323,14 @@ func _update_mesh_for_level() -> void:
 	# Material override persists across mesh swap, preserving albedo color.
 
 
+func _clear_evolution_visual_root() -> void:
+	var evolution_root = get_node_or_null("Visual/EvolutionVisualRoot")
+	if evolution_root == null:
+		return
+	for child in evolution_root.get_children():
+		child.queue_free()
+
+
 func _update_face() -> void:
 	if not is_inside_tree():
 		return
@@ -332,7 +343,7 @@ func _update_face() -> void:
 	if left_eye == null or right_eye == null or mouth == null:
 		return
 
-	var show_face = level == 1
+	var show_face = level >= 1
 	left_eye.visible = show_face
 	right_eye.visible = show_face
 	mouth.visible = show_face
@@ -415,15 +426,35 @@ func _apply_face_layout(
 	right_roll: float,
 	mouth_roll: float
 ) -> void:
-	left_eye.position = left_pos
-	right_eye.position = right_pos
-	mouth.position = mouth_pos
+	left_eye.position = _adjust_face_position(left_pos)
+	right_eye.position = _adjust_face_position(right_pos)
+	mouth.position = _adjust_face_position(mouth_pos)
 	left_eye.rotation = Vector3(0.0, 0.0, left_roll)
 	right_eye.rotation = Vector3(0.0, 0.0, right_roll)
 	mouth.rotation = Vector3(0.0, 0.0, mouth_roll)
-	left_eye.scale = left_scale
-	right_eye.scale = right_scale
-	mouth.scale = mouth_scale
+	left_eye.scale = _adjust_face_scale(left_scale)
+	right_eye.scale = _adjust_face_scale(right_scale)
+	mouth.scale = _adjust_face_scale(mouth_scale)
+
+
+func _adjust_face_position(base_pos: Vector3) -> Vector3:
+	match level:
+		2:
+			return Vector3(base_pos.x * 1.08, base_pos.y * 1.05, 0.515)
+		_:
+			if level >= 3:
+				return Vector3(base_pos.x * 1.18, base_pos.y * 1.1 + 0.12, 0.665)
+	return base_pos
+
+
+func _adjust_face_scale(base_scale: Vector3) -> Vector3:
+	match level:
+		2:
+			return base_scale * 1.1
+		_:
+			if level >= 3:
+				return base_scale * 1.25
+	return base_scale
 
 
 func _apply_face_material(color: Color) -> void:
@@ -453,7 +484,7 @@ func _update_accessories() -> void:
 	for accessory in accessories:
 		if accessory:
 			accessory.visible = false
-	if level != 1:
+	if level < 1:
 		return
 
 	_apply_accessory_material(_accessory_color_for_element())
@@ -550,10 +581,30 @@ func _show_accessory(accessory: MeshInstance3D, pos: Vector3, rot: Vector3, acce
 	if accessory == null:
 		return
 	accessory.visible = true
-	accessory.position = pos
+	accessory.position = _adjust_accessory_position(pos)
 	accessory.rotation = rot
-	accessory.scale = accessory_scale
+	accessory.scale = _adjust_accessory_scale(accessory_scale)
 	accessory.material_override = _accessory_material
+
+
+func _adjust_accessory_position(base_pos: Vector3) -> Vector3:
+	match level:
+		2:
+			return Vector3(base_pos.x * 1.1, base_pos.y * 1.08 + 0.05, base_pos.z)
+		_:
+			if level >= 3:
+				return Vector3(base_pos.x * 1.25, base_pos.y * 1.15 + 0.28, base_pos.z)
+	return base_pos
+
+
+func _adjust_accessory_scale(base_scale: Vector3) -> Vector3:
+	match level:
+		2:
+			return base_scale * 1.15
+		_:
+			if level >= 3:
+				return base_scale * 1.35
+	return base_scale
 
 
 func _apply_accessory_material(color: Color) -> void:
