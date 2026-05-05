@@ -34,7 +34,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	# WASD + QE movement in local camera space.
+	# WASD + Space/Shift movement in local camera space.
 	var dir = Vector3.ZERO
 
 	if Input.is_key_pressed(KEY_W):
@@ -45,16 +45,16 @@ func _process(delta: float) -> void:
 		dir -= transform.basis.x
 	if Input.is_key_pressed(KEY_D):
 		dir += transform.basis.x
-	if Input.is_key_pressed(KEY_E):
+	if Input.is_key_pressed(KEY_SPACE):
 		dir += transform.basis.y
-	if Input.is_key_pressed(KEY_Q):
+	if Input.is_key_pressed(KEY_SHIFT):
 		dir -= transform.basis.y
 
 	if dir != Vector3.ZERO:
 		dir = dir.normalized()
 
 	var speed = move_speed
-	if Input.is_key_pressed(KEY_SHIFT):
+	if Input.is_key_pressed(KEY_CTRL):
 		speed *= sprint_multiplier
 
 	global_position += dir * speed * delta

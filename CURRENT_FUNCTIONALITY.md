@@ -166,8 +166,8 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - Simple observer camera for 3D inspection.
 - Controls:
   - Move: `W A S D`
-  - Vertical: `E` up, `Q` down
-  - Sprint: `Shift`
+  - Vertical: `Space` up, `Shift` down
+  - Sprint: `Ctrl`
   - Mouse look when captured
   - `Esc`: release mouse
   - `Tab`: capture mouse
