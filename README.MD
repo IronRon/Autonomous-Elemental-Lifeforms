@@ -1,292 +1,104 @@
 # Autonomous Elemental Lifeforms
 
-## Project Proposal
+Name: Ronak Pathak
 
-### Project Title
-**Autonomous Elemental Lifeforms**
+Student Number: C22309236
 
----
+Class Group: TU856
 
-## Overview
-This project is a 3D artificial life simulation built in Godot where small magical elemental lifeforms autonomously move, interact, evolve, and compete for survival.
+Video:
 
-The world contains multiple elemental species such as **Fire**, **Wind**, **Water**, **Earth**, and **Anti-Magic**. Each lifeform begins as a small floating sphere-like creature with its own colour, face, movement, and behaviour. These lifeforms are not directly controlled by the player. Instead, they make decisions on their own using autonomous behaviours such as wandering, seeking allies, fleeing stronger enemies, pursuing weaker targets, and merging with their own kind to evolve into stronger forms.
+# Description of the project
 
-The aim of the project is to create the illusion that these small magical entities are truly “alive” by giving them autonomous movement, survival instincts, readable reactions, distinct visual identity, and emergent group behaviour.
+Autonomous Elemental Lifeforms is a 3D artificial life simulation built in Godot. The project simulates groups of small elemental creatures that move, group together, collect mana, evolve, flee from danger, and fight anti-magic predators without direct player control.
 
----
+The world contains five lifeform types: Fire, Wind, Water, Earth, and AntiMagic. Each element has its own colour, face style, accessory shapes, particle colours, and behaviour role. Normal elemental lifeforms try to survive by wandering, gathering mana, following matching allies, and merging into stronger forms. AntiMagic lifeforms act as predators that chase and damage the other elements.
 
-## Current System Documentation
+The aim of the project is to make simple magical creatures feel alive through autonomous movement, reactions, group behaviour, evolution, combat, sound, particles, and live simulation statistics.
 
-Detailed subsystem documentation is available in [`docs/README.md`](docs/README.md).
+# Instructions for use
 
-The documentation covers:
+Open the project in Godot 4.6 or a compatible Godot 4 version and run the main scene, `world.tscn`.
 
-- overall architecture
-- lifeform visuals and stats
-- brain states, steering behaviours, and evolution
-- combat, particles, and audio
-- mana orbs and player interaction
-- simulation manager spawning and counters
-- world, environment, stats UI, and camera
+Controls:
 
-For a quick current feature snapshot, see [`CURRENT_FUNCTIONALITY.md`](CURRENT_FUNCTIONALITY.md).
+- `W A S D`: move the observer camera
+- `Space`: move camera up
+- `Shift`: move camera down
+- `Ctrl`: sprint camera movement
+- Mouse: look around while the mouse is captured
+- `Tab`: capture the mouse
+- `Esc`: release the mouse
+- Left mouse button: spawn a mana orb from the camera/cursor direction
+- `M`: spawn a mana orb in front of the camera
+- `Q`: create an attract pulse that pulls nearby lifeforms toward the pulse
+- `E`: create a repel pulse that pushes nearby lifeforms away from the pulse
 
----
+When the simulation starts, the manager automatically spawns lifeforms for each element and places mana orbs around the arena. The stats panel shows the current number of lifeforms, mana orbs, deaths, evolutions, and per-element level counts.
 
-## Core Idea
-Each elemental lifeform acts as a tiny magical organism.
+# How it works
 
-They will:
+The main scene is `world.tscn`. It contains the environment, free-fly observer camera, background music, stats UI, and `SimulationManager`.
 
-- wander when idle
-- detect nearby lifeforms
-- seek others of the same element
-- merge with matching allies to evolve into stronger forms
-- avoid or flee stronger enemies
-- pursue weaker targets when aggressive
-- react differently depending on their element and evolution level
-- compete until one element dominates the simulation
+`SimulationManager` creates the starting population, spawns mana orbs, tracks deaths and evolutions, relocates mana orbs, and handles player input for mana spawning and attract/repel pulses.
 
-This creates a magical ecosystem where simple rules combine to produce more complex and lifelike behaviour.
+Each lifeform is an instance of `lifeform.tscn`. The root script, `lifeform.gd`, controls the creature's element, level, health, attack energy, colour, mesh shape, face details, accessories, particles, collision effects, and death behaviour. Level 1 lifeforms use a sphere shape, level 2 lifeforms use a box shape, and level 3 lifeforms use a capsule shape.
 
----
+The decision-making is handled by `lifeform_brain.gd`. It switches between behaviour modes such as wander, seek mana, leader, follower, flee, pursue, counter-attack, player attract, and player repel. The movement itself is based on steering behaviours from the starting project, including wander, seek, flee, pursue, offset pursue, avoidance, arrive, and constrain.
 
-## Player Interaction
-Player interaction will be intentionally simple so that the main focus remains on the autonomous simulation.
+Evolution works by grouping three compatible same-element lifeforms. A leader reserves two follower slots, waits for the group to form, and then merges the group into one stronger lifeform at the average position. The evolved lifeform keeps the same element but gains a higher level, larger size, more strength, and different movement stats.
 
-The player will:
+Combat is mainly between AntiMagic and non-AntiMagic lifeforms. AntiMagic creatures pursue normal elements, while normal elements flee or counter-attack when a predator gets close. Collision damage uses the lifeforms' attack energy, and deaths trigger sound, particles, and simulation statistics.
 
-- choose an element to support at the beginning of the simulation
-- observe the battle for survival between all elemental species
-- place a limited number of **neutral mana orbs** during the simulation
-- use these mana orbs strategically to help their chosen element evolve and survive
+# List of classes/assets in the project
 
-Any nearby lifeform may consume a neutral mana orb, so the player must place them carefully at the right time and location.
+| Class/asset | Source |
+|-----------|-----------|
+| `world.tscn` | Self written / assembled for this project |
+| `environment.tscn` | Self assembled using KayKit Space Base Bits assets and user-added scene layout |
+| `lifeform.tscn` | Self written / assembled for this project |
+| `lifeform.gd` | Self written, extending the inherited `Boid` steering base |
+| `lifeform_brain.gd` | Self written |
+| `lifeform_stats.gd` | Self written |
+| `mana_orb.tscn` | Self written / assembled for this project |
+| `mana_orb.gd` | Self written |
+| `simulation_manager.gd` | Self written |
+| `simulation_stats_ui.gd` | Self written |
+| `camera_free_fly.gd` | Self written |
+| `background_music.gd` | Self written |
+| Steering behaviour scripts in `behaviors/` such as `boid.gd`, `wander.gd`, `seek.gd`, `Flee.gd`, `pursue.gd`, `offset_pursue.gd`, `avoidance.gd`, `arrive.gd`, and `constrain.gd` | Modified from / based on the `skooter500/hands` behaviours branch starter project |
+| Procedural lifeform body meshes, faces, eyebrows, eyes, mouths, horns, wings, crest, droplets, pebbles, trails, bursts, and player pulse visuals | Self generated in Godot using built-in meshes and materials |
+| KayKit Space Base Bits environment models and texture in `addons/kaykit_space_base_bits/` | From KayKit Space Base Bits by Kay Lousberg, CC0 |
+| Godot XR Tools plugin in `addons/godot-xr-tools/` | From Godot XR Tools, MIT licensed |
+| Hand Pose Detector plugin in `addons/hand_pose_detector/` | External addon, MIT licensed |
+| Debug Draw 3D plugin in `addons/debug_draw_3d/` | External addon, MIT licensed |
+| Godot OpenXR Vendors plugin in `addons/godotopenxrvendors/` | External OpenXR vendor plugin, licenses included in folder |
+| `assets/sounds/*.wav` | Project audio assets stored locally in the repo |
+| Shader/material resources in `materials/` and `assets/wireframe-material.gdshader` | Mix of project materials and external shader references where noted in file comments, including MIT/CC0 shader sources |
+| Fonts in `fonts/` and soundfont files in `assets/` | External/local assets included in the project repository |
+| Documentation files in `docs/`, `CURRENT_FUNCTIONALITY.md`, and `MODULAR_BOID_GUIDE.md` | Self written project documentation |
 
-This keeps the simulation mostly autonomous while still giving the player a small but meaningful influence on the outcome.
+# References
 
----
+* [skooter500/hands - behaviors branch](https://github.com/skooter500/hands/tree/behaviors)
+* [KayKit Space Base Bits by Kay Lousberg](https://kaylousberg.com/)
+* [Godot XR Tools](https://github.com/GodotVR/godot-xr-tools)
+* [Debug Draw 3D for Godot](https://github.com/DmitriySalnikov/godot_debug_draw_3d)
+* [Godot Engine documentation](https://docs.godotengine.org/)
+* Inigo Quilez shader references noted in the material shader comments
 
-## Artificial Life and Believability
-The project is based on the idea that life-like behaviour can emerge from a set of simple rules.
+# What I am most proud of in the assignment
 
-The elemental lifeforms should feel alive because they will appear to:
+I am most proud of how the simulation creates readable emergent behaviour from simple rules. The lifeforms are not directly controlled, but they still appear to have goals: they wander, search for mana, form groups, evolve, run from predators, and sometimes fight back.
 
-- search for allies
-- fear stronger threats
-- protect their own kind through grouping
-- become more confident when evolved
-- compete for survival
-- move with purpose rather than randomness
+I am also proud of the evolution and visual identity systems. Each element uses the same base scene, but the code changes the colour, face layout, accessories, particles, and level shape so the creatures feel different while still being efficient and reusable.
 
-Although they are simple magical beings, their behaviour should make the user feel that they have instincts, goals, and a form of agency.
+# What I learned
 
----
+I learned how to structure an autonomous agent system around smaller reusable behaviours instead of one fixed script. The project helped me understand steering behaviours, state switching, detection areas, grouping logic, and how small AI decisions can combine into larger simulation patterns.
 
-## Planned Features
+I also learned more about managing a Godot scene as a complete simulation: safe spawning, collision layers, resource pickups, audio/particle feedback, live UI statistics, and separating world management from individual agent behaviour.
 
-### 1. Multiple Elemental Species
-The simulation will contain different elemental lifeforms, each with their own identity and style.
+# Extra documentation
 
-Planned elements:
-
-- Fire
-- Wind
-- Water
-- Earth
-- Anti-Magic
-
-Each element will have:
-
-- its own colour
-- different movement feel
-- different personality/temperament
-- its own evolution chain
-
----
-
-### 2. Steering Behaviours
-The lifeforms will use steering behaviours to move autonomously in the world.
-
-Planned behaviours include:
-
-- **Wander** – default movement when nothing important is nearby
-- **Seek** – move toward same-element allies or targets
-- **Arrive** – slow down naturally near a target
-- **Flee** – escape from stronger enemies
-- **Pursue** – chase weaker enemies or prey
-- **Offset Pursue / Follow** – smaller same-type lifeforms follow stronger evolved allies
-- **Avoidance** – avoid non-matching elements or obstacles
-
-These behaviours will make movement more natural and life-like.
-
----
-
-### 3. Evolution System
-Lifeforms of the same element will merge when they collide under the correct conditions.
-
-This is inspired by a progression system similar to **2048**, where two matching lifeforms combine to form a stronger evolution stage.
-
-Example Fire evolution:
-
-- Spark
-- Flame
-- Salamander
-- Drake
-- Dragon
-
-Other elements will have their own themed evolutions.
-
-This gives the simulation:
-
-- visible growth
-- changing power levels
-- more readable progression
-- stronger emotional attachment to surviving factions
-
----
-
-### 4. Predator / Survival System
-The project will include competitive survival mechanics.
-
-Rules may include:
-
-- stronger entities can defeat weaker enemies
-- weaker entities will flee stronger threats
-- Anti-Magic lifeforms actively hunt normal elemental lifeforms
-- Anti-Magic can also merge and evolve like other species
-- final evolved forms may become dominant hunters or independent wanderers
-
-This should create emergent survival scenarios rather than a fixed scripted outcome.
-
----
-
-### 5. Visual Identity and Personality
-Although the creatures are simple in shape, they will still have personality.
-
-Planned visual/personality features:
-
-- expressive faces
-- glowing elemental colours
-- different facial expressions or eye styles
-- different movement styles per element
-- particles/trails to emphasize magical identity
-- growth in size and visual power as they evolve
-
-Possible elemental personalities:
-
-- **Fire** – aggressive, energetic, bold
-- **Wind** – fast, playful, erratic
-- **Water** – cautious, fluid, social
-- **Earth** – slow, defensive, strong
-- **Anti-Magic** – hostile, predatory, corrupting
-
-This will help distinguish the lifeforms beyond colour alone.
-
----
-
-## Technical Approach
-
-### Engine
-- **Godot**
-
-### Base Project
-This project will use the following repository as a starting point for behaviour systems and project setup:
-
-- [skooter500/hands - behaviors branch](https://github.com/skooter500/hands/tree/behaviors)
-
-This starter project will be extended and heavily modified to create an original autonomous life simulation.
-
----
-
-## Planned Architecture
-The final system will be split into multiple scripts/classes rather than placing all behaviour in one large file.
-
-Possible script structure:
-
-- `Lifeform.gd`  
-  Main controller for an elemental creature
-
-- `LifeformStats.gd`  
-  Stores element type, level, size, strength, speed, and state values
-
-- `LifeformBrain.gd`  
-  Handles decision-making and state changes
-
-- `SteeringController.gd`  
-  Handles wander, seek, flee, pursue, and group following
-
-- `EvolutionSystem.gd`  
-  Handles merging, upgrading, and evolution logic
-
-- `CombatResolver.gd`  
-  Handles collision outcomes and predator/prey rules
-
-- `SimulationManager.gd`  
-  Spawns lifeforms, tracks counts, manages win conditions, and player support features
-
-- `ManaOrb.gd`  
-  Neutral interactable resource that can be consumed by lifeforms
-
-This structure should help keep the project modular and easier to expand.
-
----
-
-## Planned AI Logic
-Each lifeform will make decisions based on what it detects nearby.
-
-Example decision flow:
-
-1. If a stronger enemy is nearby, flee
-2. If a weaker enemy is nearby and attack conditions are met, pursue
-3. If a same-element ally is nearby and merge conditions are met, seek and combine
-4. If a stronger same-element ally is nearby, follow/support it
-5. If nothing relevant is nearby, wander
-
-This will allow the simulation to produce emergent behaviour from simple decision rules.
-
----
-
-## Why This Fits the Assignment
-This project matches the assignment brief because it creates autonomous artificial lifeforms that appear to have goals and instincts of their own.
-
-It includes:
-
-- autonomous behaviour
-- interaction with surroundings
-- group behaviour
-- survival instincts
-- emergent outcomes
-- steering behaviours
-- evolving forms
-- visual identity and personality
-
-Rather than one large character, this project explores the idea of **life through a magical ecosystem of many small autonomous beings**.
-
-The goal is to make the player believe that these elemental creatures are alive in some way through their motion, reactions, alliances, conflicts, and survival.
-
----
-
-## Scope
-The project is designed to be achievable while still showing strong complexity.
-
-### Minimum Viable Product
-- multiple elemental lifeform types
-- wandering and seeking behaviours
-- same-element merging/evolution
-- enemy fleeing/pursuit
-- anti-magic predator behaviour
-- simulation end state / winning element
-- simple player support mechanic through neutral mana orbs
-
-
-## References
-- [skooter500/hands - behaviors branch](https://github.com/skooter500/hands/tree/behaviors)
-
----
-
-## Author
-**Ronak Pathak**
-
-Autonomous Agents Assignment 2026
+More detailed subsystem notes are available in [`docs/README.md`](docs/README.md), and a current feature snapshot is available in [`CURRENT_FUNCTIONALITY.md`](CURRENT_FUNCTIONALITY.md).
