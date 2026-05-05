@@ -38,9 +38,12 @@ var is_dead: bool = false
 var _dynamic_material: StandardMaterial3D
 var _face_material: StandardMaterial3D
 var _accessory_material: StandardMaterial3D
+var _trail_material_is_unique: bool = false
+var _death_burst_material_is_unique: bool = false
 @onready var visual: MeshInstance3D = $Visual
 @onready var stats_node: Node = $LifeformStats
 @onready var trail_particles: GPUParticles3D = $TrailParticles
+@onready var death_burst_particles: GPUParticles3D = $DeathBurstParticles
 @onready var left_eye: MeshInstance3D = $Visual/LeftEye
 @onready var right_eye: MeshInstance3D = $Visual/RightEye
 @onready var mouth: MeshInstance3D = $Visual/Mouth
@@ -61,6 +64,7 @@ func _ready() -> void:
 	_update_face()
 	_update_accessories()
 	_update_trail()
+	_update_death_burst()
 	_sync_stats_node()
 
 	# Apply configured detection radii to area collision shapes.
@@ -83,6 +87,7 @@ func set_element_type(value: ElementType) -> void:
 	_update_face()
 	_update_accessories()
 	_update_trail()
+	_update_death_burst()
 
 
 func set_level(value: int) -> void:
@@ -92,6 +97,7 @@ func set_level(value: int) -> void:
 	_update_face()
 	_update_accessories()
 	_update_trail()
+	_update_death_burst()
 	_update_attack_stats()
 
 
@@ -184,6 +190,7 @@ func die() -> void:
 	var brain = get_node_or_null("LifeformBrain")
 	if brain and brain.has_method("on_lifeform_death"):
 		brain.on_lifeform_death()
+	_play_death_burst()
 	queue_free()
 
 
@@ -252,6 +259,7 @@ func _apply_configuration() -> void:
 	_update_face()
 	_update_accessories()
 	_update_trail()
+	_update_death_burst()
 	_sync_stats_node()
 
 
@@ -567,6 +575,10 @@ func _update_trail() -> void:
 	if trail_particles == null:
 		return
 
+	if not _trail_material_is_unique and trail_particles.process_material:
+		trail_particles.process_material = trail_particles.process_material.duplicate()
+		_trail_material_is_unique = true
+
 	trail_particles.emitting = trail_enabled
 	var material = trail_particles.process_material
 	if material is ParticleProcessMaterial:
@@ -588,5 +600,55 @@ func _trail_color_for_element() -> Color:
 		ElementType.AntiMagic:
 			return Color(0.6, 0.0, 0.9, 0.8)
 		_:
-			print("colour change!!")
 			return color
+
+
+func _update_death_burst() -> void:
+	if not is_inside_tree():
+		return
+	if death_burst_particles == null:
+		death_burst_particles = get_node_or_null("DeathBurstParticles")
+	if death_burst_particles == null:
+		return
+
+	if not _death_burst_material_is_unique and death_burst_particles.process_material:
+		death_burst_particles.process_material = death_burst_particles.process_material.duplicate()
+		_death_burst_material_is_unique = true
+
+	var material = death_burst_particles.process_material
+	if material is ParticleProcessMaterial:
+		material.color = _death_burst_color_for_element()
+
+
+func _play_death_burst() -> void:
+	if death_burst_particles == null:
+		death_burst_particles = get_node_or_null("DeathBurstParticles")
+	if death_burst_particles == null:
+		return
+
+	var burst = death_burst_particles
+	death_burst_particles = null
+	burst.emitting = false
+	burst.reparent(get_tree().current_scene, true)
+	burst.global_position = global_position
+	burst.restart()
+	burst.emitting = true
+
+	var free_timer = get_tree().create_timer(burst.lifetime + 0.25)
+	free_timer.timeout.connect(Callable(burst, "queue_free"))
+
+
+func _death_burst_color_for_element() -> Color:
+	match element_type:
+		ElementType.Fire:
+			return Color(1.0, 0.25, 0.02, 0.95)
+		ElementType.Wind:
+			return Color(0.55, 1.0, 0.45, 0.85)
+		ElementType.Water:
+			return Color(0.25, 0.65, 1.0, 0.9)
+		ElementType.Earth:
+			return Color(0.5, 0.3, 0.12, 0.85)
+		ElementType.AntiMagic:
+			return Color(0.75, 0.0, 1.0, 0.95)
+		_:
+			return visual_color
