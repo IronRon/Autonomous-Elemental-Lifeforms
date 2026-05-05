@@ -37,6 +37,7 @@ var is_dead: bool = false
 
 var _dynamic_material: StandardMaterial3D
 var _face_material: StandardMaterial3D
+var _eye_shine_material: StandardMaterial3D
 var _accessory_material: StandardMaterial3D
 var _trail_material_is_unique: bool = false
 var _death_burst_material_is_unique: bool = false
@@ -51,6 +52,12 @@ var _collision_burst_material_is_unique: bool = false
 @onready var left_eye: MeshInstance3D = $Visual/LeftEye
 @onready var right_eye: MeshInstance3D = $Visual/RightEye
 @onready var mouth: MeshInstance3D = $Visual/Mouth
+@onready var left_brow: MeshInstance3D = get_node_or_null("Visual/LeftBrow") as MeshInstance3D
+@onready var right_brow: MeshInstance3D = get_node_or_null("Visual/RightBrow") as MeshInstance3D
+@onready var left_eye_shine: MeshInstance3D = get_node_or_null("Visual/LeftEyeShine") as MeshInstance3D
+@onready var right_eye_shine: MeshInstance3D = get_node_or_null("Visual/RightEyeShine") as MeshInstance3D
+@onready var mouth_left_corner: MeshInstance3D = get_node_or_null("Visual/MouthLeftCorner") as MeshInstance3D
+@onready var mouth_right_corner: MeshInstance3D = get_node_or_null("Visual/MouthRightCorner") as MeshInstance3D
 @onready var fire_crest: MeshInstance3D = $Visual/FireCrest
 @onready var wind_wing_left: MeshInstance3D = $Visual/WindWingLeft
 @onready var wind_wing_right: MeshInstance3D = $Visual/WindWingRight
@@ -347,6 +354,7 @@ func _update_face() -> void:
 		right_eye = get_node_or_null("Visual/RightEye")
 	if mouth == null:
 		mouth = get_node_or_null("Visual/Mouth")
+	_cache_face_detail_nodes()
 	if left_eye == null or right_eye == null or mouth == null:
 		return
 
@@ -354,10 +362,12 @@ func _update_face() -> void:
 	left_eye.visible = show_face
 	right_eye.visible = show_face
 	mouth.visible = show_face
+	_set_face_detail_visibility(show_face)
 	if not show_face:
 		return
 
 	_apply_face_material(_face_color_for_element())
+	_apply_eye_shine_material()
 
 	match element_type:
 		ElementType.Fire:
@@ -372,6 +382,18 @@ func _update_face() -> void:
 				deg_to_rad(12.0),
 				deg_to_rad(92.0)
 			)
+			_apply_face_detail_layout(
+				Vector3(-0.14, 0.36, 0.505),
+				Vector3(0.14, 0.36, 0.505),
+				Vector3(-0.07, 0.27, 0.545),
+				Vector3(0.07, 0.27, 0.545),
+				Vector3(-0.095, -0.095, 0.515),
+				Vector3(0.095, -0.095, 0.515),
+				Vector3(1.35, 0.42, 0.75),
+				Vector3(0.46, 0.46, 0.46),
+				deg_to_rad(-24.0),
+				deg_to_rad(24.0)
+			)
 		ElementType.Wind:
 			_apply_face_layout(
 				Vector3(-0.18, 0.24, 0.49),
@@ -383,6 +405,18 @@ func _update_face() -> void:
 				deg_to_rad(8.0),
 				deg_to_rad(-8.0),
 				deg_to_rad(100.0)
+			)
+			_apply_face_detail_layout(
+				Vector3(-0.19, 0.35, 0.505),
+				Vector3(0.19, 0.35, 0.505),
+				Vector3(-0.215, 0.29, 0.545),
+				Vector3(0.145, 0.29, 0.545),
+				Vector3(-0.12, -0.04, 0.515),
+				Vector3(0.12, -0.04, 0.515),
+				Vector3(1.15, 0.35, 0.7),
+				Vector3(0.5, 0.5, 0.5),
+				deg_to_rad(14.0),
+				deg_to_rad(-14.0)
 			)
 		ElementType.Water:
 			_apply_face_layout(
@@ -396,6 +430,18 @@ func _update_face() -> void:
 				deg_to_rad(0.0),
 				deg_to_rad(82.0)
 			)
+			_apply_face_detail_layout(
+				Vector3(-0.14, 0.28, 0.505),
+				Vector3(0.14, 0.28, 0.505),
+				Vector3(-0.16, 0.2, 0.545),
+				Vector3(0.1, 0.2, 0.545),
+				Vector3(-0.085, -0.14, 0.515),
+				Vector3(0.085, -0.14, 0.515),
+				Vector3(0.95, 0.32, 0.65),
+				Vector3(0.43, 0.43, 0.43),
+				deg_to_rad(-7.0),
+				deg_to_rad(7.0)
+			)
 		ElementType.Earth:
 			_apply_face_layout(
 				Vector3(-0.12, 0.13, 0.49),
@@ -408,6 +454,18 @@ func _update_face() -> void:
 				deg_to_rad(0.0),
 				deg_to_rad(90.0)
 			)
+			_apply_face_detail_layout(
+				Vector3(-0.12, 0.24, 0.505),
+				Vector3(0.12, 0.24, 0.505),
+				Vector3(-0.145, 0.16, 0.545),
+				Vector3(0.095, 0.16, 0.545),
+				Vector3(-0.11, -0.13, 0.515),
+				Vector3(0.11, -0.13, 0.515),
+				Vector3(1.45, 0.42, 0.8),
+				Vector3(0.38, 0.38, 0.38),
+				deg_to_rad(0.0),
+				deg_to_rad(0.0)
+			)
 		ElementType.AntiMagic:
 			_apply_face_layout(
 				Vector3(-0.13, 0.23, 0.49),
@@ -419,6 +477,18 @@ func _update_face() -> void:
 				deg_to_rad(18.0),
 				deg_to_rad(-18.0),
 				deg_to_rad(70.0)
+			)
+			_apply_face_detail_layout(
+				Vector3(-0.13, 0.36, 0.505),
+				Vector3(0.13, 0.36, 0.505),
+				Vector3(-0.055, 0.265, 0.545),
+				Vector3(0.055, 0.265, 0.545),
+				Vector3(-0.075, -0.075, 0.515),
+				Vector3(0.075, -0.075, 0.515),
+				Vector3(1.4, 0.38, 0.75),
+				Vector3(0.34, 0.34, 0.34),
+				deg_to_rad(28.0),
+				deg_to_rad(-28.0)
 			)
 
 
@@ -442,6 +512,74 @@ func _apply_face_layout(
 	left_eye.scale = _adjust_face_scale(left_scale)
 	right_eye.scale = _adjust_face_scale(right_scale)
 	mouth.scale = _adjust_face_scale(mouth_scale)
+
+
+func _cache_face_detail_nodes() -> void:
+	if left_brow == null:
+		left_brow = get_node_or_null("Visual/LeftBrow") as MeshInstance3D
+	if right_brow == null:
+		right_brow = get_node_or_null("Visual/RightBrow") as MeshInstance3D
+	if left_eye_shine == null:
+		left_eye_shine = get_node_or_null("Visual/LeftEyeShine") as MeshInstance3D
+	if right_eye_shine == null:
+		right_eye_shine = get_node_or_null("Visual/RightEyeShine") as MeshInstance3D
+	if mouth_left_corner == null:
+		mouth_left_corner = get_node_or_null("Visual/MouthLeftCorner") as MeshInstance3D
+	if mouth_right_corner == null:
+		mouth_right_corner = get_node_or_null("Visual/MouthRightCorner") as MeshInstance3D
+
+
+func _set_face_detail_visibility(visible: bool) -> void:
+	_cache_face_detail_nodes()
+	for detail in [left_brow, right_brow, left_eye_shine, right_eye_shine, mouth_left_corner, mouth_right_corner]:
+		if detail:
+			detail.visible = visible
+
+
+func _apply_face_detail_layout(
+	left_brow_pos: Vector3,
+	right_brow_pos: Vector3,
+	left_shine_pos: Vector3,
+	right_shine_pos: Vector3,
+	left_corner_pos: Vector3,
+	right_corner_pos: Vector3,
+	brow_scale: Vector3,
+	dot_scale: Vector3,
+	left_brow_roll: float,
+	right_brow_roll: float
+) -> void:
+	_cache_face_detail_nodes()
+
+	if left_brow:
+		left_brow.position = _adjust_face_position(left_brow_pos)
+		left_brow.rotation = Vector3(0.0, 0.0, left_brow_roll)
+		left_brow.scale = _adjust_face_scale(brow_scale)
+		left_brow.material_override = _face_material
+	if right_brow:
+		right_brow.position = _adjust_face_position(right_brow_pos)
+		right_brow.rotation = Vector3(0.0, 0.0, right_brow_roll)
+		right_brow.scale = _adjust_face_scale(brow_scale)
+		right_brow.material_override = _face_material
+	if left_eye_shine:
+		left_eye_shine.position = _adjust_face_position(left_shine_pos)
+		left_eye_shine.rotation = Vector3.ZERO
+		left_eye_shine.scale = _adjust_face_scale(dot_scale)
+		left_eye_shine.material_override = _eye_shine_material
+	if right_eye_shine:
+		right_eye_shine.position = _adjust_face_position(right_shine_pos)
+		right_eye_shine.rotation = Vector3.ZERO
+		right_eye_shine.scale = _adjust_face_scale(dot_scale)
+		right_eye_shine.material_override = _eye_shine_material
+	if mouth_left_corner:
+		mouth_left_corner.position = _adjust_face_position(left_corner_pos)
+		mouth_left_corner.rotation = Vector3.ZERO
+		mouth_left_corner.scale = _adjust_face_scale(dot_scale)
+		mouth_left_corner.material_override = _face_material
+	if mouth_right_corner:
+		mouth_right_corner.position = _adjust_face_position(right_corner_pos)
+		mouth_right_corner.rotation = Vector3.ZERO
+		mouth_right_corner.scale = _adjust_face_scale(dot_scale)
+		mouth_right_corner.material_override = _face_material
 
 
 func _adjust_face_position(base_pos: Vector3) -> Vector3:
@@ -471,10 +609,32 @@ func _apply_face_material(color: Color) -> void:
 	left_eye.material_override = _face_material
 	right_eye.material_override = _face_material
 	mouth.material_override = _face_material
+	if left_brow:
+		left_brow.material_override = _face_material
+	if right_brow:
+		right_brow.material_override = _face_material
+	if mouth_left_corner:
+		mouth_left_corner.material_override = _face_material
+	if mouth_right_corner:
+		mouth_right_corner.material_override = _face_material
 	_face_material.albedo_color = color
 	_face_material.emission_enabled = element_type == ElementType.AntiMagic
 	_face_material.emission = color
 	_face_material.emission_energy_multiplier = 0.8
+
+
+func _apply_eye_shine_material() -> void:
+	if _eye_shine_material == null:
+		_eye_shine_material = StandardMaterial3D.new()
+		_eye_shine_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		_eye_shine_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+		_eye_shine_material.emission_enabled = true
+		_eye_shine_material.emission = Color(1.0, 1.0, 1.0, 1.0)
+		_eye_shine_material.emission_energy_multiplier = 0.35
+	if left_eye_shine:
+		left_eye_shine.material_override = _eye_shine_material
+	if right_eye_shine:
+		right_eye_shine.material_override = _eye_shine_material
 
 
 func _face_color_for_element() -> Color:

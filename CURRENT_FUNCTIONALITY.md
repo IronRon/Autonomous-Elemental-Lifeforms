@@ -33,6 +33,12 @@ This document summarizes what is currently implemented for the autonomous lifefo
     - `LeftEye`
     - `RightEye`
     - `Mouth`
+    - `LeftBrow`
+    - `RightBrow`
+    - `LeftEyeShine`
+    - `RightEyeShine`
+    - `MouthLeftCorner`
+    - `MouthRightCorner`
   - Element accessory meshes:
     - `FireCrest`
     - `WindWingLeft`
@@ -119,6 +125,10 @@ This document summarizes what is currently implemented for the autonomous lifefo
 - Level 2 lifeforms become larger box-shaped evolved forms.
 - Level 3 lifeforms become larger capsule-shaped evolved forms.
 - Faces and accessories remain visible on all levels and are repositioned/scaled for the active body shape.
+- Face detail now uses extra lightweight meshes:
+  - brows for stronger expression/readability
+  - small white eye highlights so eyes read as glossy rather than flat black dots
+  - mouth-corner dots to make mouth shapes feel more intentional
 - Face layouts are element-specific:
   - Fire: sharper aggressive eyes and mouth.
   - Wind: wider, lighter expression.

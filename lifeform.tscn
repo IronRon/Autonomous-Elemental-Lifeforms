@@ -168,6 +168,28 @@ transform = Transform3D(-0.043624327, -0.74954313, 0, 1.2492385, -0.026174597, 0
 material_override = SubResource("StandardMaterial3D_4csf1")
 mesh = SubResource("CapsuleMesh_2f8je")
 
+[node name="LeftBrow" type="MeshInstance3D" parent="Visual"]
+material_override = SubResource("StandardMaterial3D_4csf1")
+mesh = SubResource("CapsuleMesh_2f8je")
+
+[node name="RightBrow" type="MeshInstance3D" parent="Visual"]
+material_override = SubResource("StandardMaterial3D_4csf1")
+mesh = SubResource("CapsuleMesh_2f8je")
+
+[node name="LeftEyeShine" type="MeshInstance3D" parent="Visual"]
+mesh = SubResource("SphereMesh_yugsa")
+
+[node name="RightEyeShine" type="MeshInstance3D" parent="Visual"]
+mesh = SubResource("SphereMesh_yugsa")
+
+[node name="MouthLeftCorner" type="MeshInstance3D" parent="Visual"]
+material_override = SubResource("StandardMaterial3D_4csf1")
+mesh = SubResource("SphereMesh_yugsa")
+
+[node name="MouthRightCorner" type="MeshInstance3D" parent="Visual"]
+material_override = SubResource("StandardMaterial3D_4csf1")
+mesh = SubResource("SphereMesh_yugsa")
+
 [node name="FireCrest" type="MeshInstance3D" parent="Visual" unique_id=830513020]
 transform = Transform3D(1, 0, 0, 0, 1.2226845, 0.18712053, 0, -0.25988963, 0.8803328, 0, 0.58, 0.02)
 material_override = SubResource("StandardMaterial3D_ttbyj")
