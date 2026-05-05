@@ -22,6 +22,7 @@ var _is_picked_up: bool = false
 @onready var glow_light: OmniLight3D = get_node_or_null("GlowLight")
 @onready var pickup_area: Area3D = get_node_or_null("PickupArea")
 @onready var body_collision_shape: CollisionShape3D = get_node_or_null("CollisionShape3D")
+@onready var pickup_sound: AudioStreamPlayer3D = get_node_or_null("PickupSound")
 
 func _ready():
 	_base_scale = scale
@@ -117,6 +118,8 @@ func _play_pickup_flash() -> void:
 		_orb_material.emission_energy_multiplier = glow_energy * 3.0
 	if glow_light:
 		glow_light.light_energy = _base_light_energy * 3.0
+	if pickup_sound:
+		pickup_sound.play()
 
 	var tween = create_tween()
 	tween.set_parallel(true)
@@ -126,4 +129,11 @@ func _play_pickup_flash() -> void:
 	if _orb_material:
 		tween.tween_property(_orb_material, "albedo_color", Color(0.25, 0.8, 1.0, 0.0), pickup_flash_time)
 	tween.set_parallel(false)
+	tween.tween_interval(_get_remaining_pickup_sound_time())
 	tween.tween_callback(queue_free)
+
+
+func _get_remaining_pickup_sound_time() -> float:
+	if pickup_sound == null or pickup_sound.stream == null:
+		return 0.0
+	return max(0.0, pickup_sound.stream.get_length() - pickup_flash_time)
