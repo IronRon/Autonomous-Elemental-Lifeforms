@@ -1277,3 +1277,133 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.573278, -9.246593, 71.2013
 
 [node name="structure_tall2" parent="." unique_id=879173140 instance=ExtResource("3_00014")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.809557, -8.700386, 89.63103)
+
+[node name="rocks_B3" type="StaticBody3D" parent="." unique_id=1154617870]
+transform = Transform3D(24.111967, 0, 17.849731, 0, 30, 0, -17.849731, 0, 24.111967, 8.795792, 107.31883, -17.404861)
+collision_layer = 2
+
+[node name="rocks_B" type="MeshInstance3D" parent="rocks_B3" unique_id=1423968300]
+transform = Transform3D(1, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 1, 0, -0.5449834, 0)
+mesh = SubResource("ArrayMesh_sbotq")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rocks_B3" unique_id=1732428649]
+transform = Transform3D(1, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 1, 0.122974396, -0.022471428, -0.21327975)
+shape = SubResource("BoxShape3D_4sbom")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="rocks_B3" unique_id=1558363021]
+transform = Transform3D(1, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 1, -0.027038515, -0.33679247, 0.061279282)
+shape = SubResource("BoxShape3D_2bfpd")
+
+[node name="rocks_B4" type="StaticBody3D" parent="." unique_id=489340920]
+transform = Transform3D(17.03531, 2.158826e-06, 24.694088, 0, -30, 2.622683e-06, 24.694088, -1.4892743e-06, -17.03531, 10.760391, 107.31883, -17.404861)
+collision_layer = 2
+
+[node name="rocks_B" type="MeshInstance3D" parent="rocks_B4" unique_id=1967866328]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0.5449834, -5.9604645e-08)
+mesh = SubResource("ArrayMesh_sbotq")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rocks_B4" unique_id=2031964792]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0.122974396, 1.0674953, -0.21327978)
+shape = SubResource("BoxShape3D_4sbom")
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="rocks_B4" unique_id=2046405841]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -0.027038574, 0.7531743, 0.061279237)
+shape = SubResource("BoxShape3D_2bfpd")
+
+[node name="rocks_A3" type="StaticBody3D" parent="." unique_id=462135181]
+transform = Transform3D(17.01548, 0, -24.707754, 0, 29.999998, 0, 24.707754, 0, 17.01548, -69.65512, 60.06588, 64.48001)
+collision_layer = 2
+
+[node name="rocks_A" type="MeshInstance3D" parent="rocks_A3" unique_id=832306166]
+mesh = SubResource("ArrayMesh_46bfr")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rocks_A3" unique_id=1938462124]
+transform = Transform3D(0.99999857, 0, 0, 0, 0.99999857, 0, 0, 0, 0.99999857, -0.12463355, 0.17285146, -0.011657715)
+shape = SubResource("BoxShape3D_g4tgr")
+
+[node name="rocks_A4" type="StaticBody3D" parent="." unique_id=448526642]
+transform = Transform3D(17.035309, 2.1588257e-06, 24.694086, 0, -29.999998, 2.6226828e-06, 24.694086, -1.4892742e-06, -17.035309, -69.65512, 60.06588, 64.48001)
+collision_layer = 2
+
+[node name="rocks_A" type="MeshInstance3D" parent="rocks_A4" unique_id=1355826789]
+mesh = SubResource("ArrayMesh_46bfr")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rocks_A4" unique_id=618567296]
+transform = Transform3D(0.99999857, 0, 0, 0, 0.99999857, 0, 0, 0, 0.99999857, -0.12463355, 0.17285146, -0.011657715)
+shape = SubResource("BoxShape3D_g4tgr")
+
+[node name="rock_B3" type="StaticBody3D" parent="." unique_id=2047636792]
+transform = Transform3D(5.671827, 0, -8.235921, 0, 10.000001, 0, 8.235921, 0, 5.671827, 54.69675, 49.777733, 10.596615)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B3" unique_id=1992879810]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B3" unique_id=2045584067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")
+
+[node name="rock_B4" type="StaticBody3D" parent="." unique_id=2062732912]
+transform = Transform3D(5.6784377, 7.196087e-07, 8.231364, 0, -10.000001, 8.7422785e-07, 8.231364, -4.9642483e-07, -5.6784377, 54.69675, 49.777733, 10.596615)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B4" unique_id=105468978]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B4" unique_id=153873068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")
+
+[node name="rock_B5" type="StaticBody3D" parent="." unique_id=2040973051]
+transform = Transform3D(5.671827, 0, -8.235921, 0, 10.000001, 0, 8.235921, 0, 5.671827, -23.828487, 27.866127, -89.840805)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B5" unique_id=485825094]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B5" unique_id=1234697737]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")
+
+[node name="rock_B6" type="StaticBody3D" parent="." unique_id=1968806150]
+transform = Transform3D(5.6784377, 7.196087e-07, 8.231364, 0, -10.000001, 8.7422785e-07, 8.231364, -4.9642483e-07, -5.6784377, -23.828487, 27.866127, -89.840805)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B6" unique_id=915345999]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B6" unique_id=364538160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")
+
+[node name="rock_B7" type="StaticBody3D" parent="." unique_id=1241237599]
+transform = Transform3D(5.671827, 0, -8.235921, 0, 10.000001, 0, 8.235921, 0, 5.671827, 54.69675, 21.006348, -87.269424)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B7" unique_id=1925729526]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B7" unique_id=2033715238]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")
+
+[node name="rock_B8" type="StaticBody3D" parent="." unique_id=1805967163]
+transform = Transform3D(5.6784377, 7.196087e-07, 8.231364, 0, -10.000001, 8.7422785e-07, 8.231364, -4.9642483e-07, -5.6784377, 54.69675, 21.006348, -87.269424)
+collision_layer = 2
+
+[node name="rock_B" type="MeshInstance3D" parent="rock_B8" unique_id=2095606412]
+mesh = SubResource("ArrayMesh_bfvrb")
+skeleton = NodePath("")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="rock_B8" unique_id=1521003440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00579834, 0.23544312, -0.022583008)
+shape = SubResource("BoxShape3D_dm4p5")

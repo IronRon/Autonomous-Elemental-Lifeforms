@@ -40,7 +40,6 @@ script = ExtResource("6_bgm_script")
 
 [node name="SimulationManager" type="Node" parent="." unique_id=197606733]
 script = ExtResource("4_sim")
-use_evolution_test_spawn = true
 
 [node name="LifeformAnti1" parent="." unique_id=2104863254 groups=["lifeforms"] instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.816925, 7.5202923, 0)
