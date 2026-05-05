@@ -16,6 +16,24 @@ The aim of the project is to create the illusion that these small magical entiti
 
 ---
 
+## Current System Documentation
+
+Detailed subsystem documentation is available in [`docs/README.md`](docs/README.md).
+
+The documentation covers:
+
+- overall architecture
+- lifeform visuals and stats
+- brain states, steering behaviours, and evolution
+- combat, particles, and audio
+- mana orbs and player interaction
+- simulation manager spawning and counters
+- world, environment, stats UI, and camera
+
+For a quick current feature snapshot, see [`CURRENT_FUNCTIONALITY.md`](CURRENT_FUNCTIONALITY.md).
+
+---
+
 ## Core Idea
 Each elemental lifeform acts as a tiny magical organism.
 
