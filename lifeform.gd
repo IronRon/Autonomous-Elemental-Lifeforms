@@ -40,10 +40,12 @@ var _face_material: StandardMaterial3D
 var _accessory_material: StandardMaterial3D
 var _trail_material_is_unique: bool = false
 var _death_burst_material_is_unique: bool = false
+var _collision_burst_material_is_unique: bool = false
 @onready var visual: MeshInstance3D = $Visual
 @onready var stats_node: Node = $LifeformStats
 @onready var trail_particles: GPUParticles3D = $TrailParticles
 @onready var death_burst_particles: GPUParticles3D = $DeathBurstParticles
+@onready var collision_burst_particles: GPUParticles3D = $CollisionBurstParticles
 @onready var left_eye: MeshInstance3D = $Visual/LeftEye
 @onready var right_eye: MeshInstance3D = $Visual/RightEye
 @onready var mouth: MeshInstance3D = $Visual/Mouth
@@ -65,6 +67,7 @@ func _ready() -> void:
 	_update_accessories()
 	_update_trail()
 	_update_death_burst()
+	_update_collision_burst()
 	_sync_stats_node()
 
 	# Apply configured detection radii to area collision shapes.
@@ -88,6 +91,7 @@ func set_element_type(value: ElementType) -> void:
 	_update_accessories()
 	_update_trail()
 	_update_death_burst()
+	_update_collision_burst()
 
 
 func set_level(value: int) -> void:
@@ -98,6 +102,7 @@ func set_level(value: int) -> void:
 	_update_accessories()
 	_update_trail()
 	_update_death_burst()
+	_update_collision_burst()
 	_update_attack_stats()
 
 
@@ -157,6 +162,11 @@ func resolve_collision_with(other: Boid) -> void:
 		return
 	if element_type != ElementType.AntiMagic and other.element_type != ElementType.AntiMagic:
 		return
+
+	var collision_point = (global_position + other.global_position) * 0.5
+	_play_collision_burst(collision_point)
+	if other.has_method("_play_collision_burst"):
+		other._play_collision_burst(collision_point)
 
 	var was_dead_before = is_dead
 	if other.has_method("apply_damage"):
@@ -260,6 +270,7 @@ func _apply_configuration() -> void:
 	_update_accessories()
 	_update_trail()
 	_update_death_burst()
+	_update_collision_burst()
 	_sync_stats_node()
 
 
@@ -620,6 +631,23 @@ func _update_death_burst() -> void:
 		material.color = _death_burst_color_for_element()
 
 
+func _update_collision_burst() -> void:
+	if not is_inside_tree():
+		return
+	if collision_burst_particles == null:
+		collision_burst_particles = get_node_or_null("CollisionBurstParticles")
+	if collision_burst_particles == null:
+		return
+
+	if not _collision_burst_material_is_unique and collision_burst_particles.process_material:
+		collision_burst_particles.process_material = collision_burst_particles.process_material.duplicate()
+		_collision_burst_material_is_unique = true
+
+	var material = collision_burst_particles.process_material
+	if material is ParticleProcessMaterial:
+		material.color = _collision_burst_color_for_element()
+
+
 func _play_death_burst() -> void:
 	if death_burst_particles == null:
 		death_burst_particles = get_node_or_null("DeathBurstParticles")
@@ -629,13 +657,49 @@ func _play_death_burst() -> void:
 	var burst = death_burst_particles
 	death_burst_particles = null
 	burst.emitting = false
-	burst.reparent(get_tree().current_scene, true)
+	burst.reparent(_get_effect_parent(), true)
 	burst.global_position = global_position
 	burst.restart()
 	burst.emitting = true
 
 	var free_timer = get_tree().create_timer(burst.lifetime + 0.25)
 	free_timer.timeout.connect(Callable(burst, "queue_free"))
+
+
+func _play_collision_burst(collision_point: Vector3) -> void:
+	if collision_burst_particles == null:
+		collision_burst_particles = get_node_or_null("CollisionBurstParticles")
+	if collision_burst_particles == null:
+		return
+
+	var burst = collision_burst_particles.duplicate() as GPUParticles3D
+	if burst == null:
+		return
+
+	var material = burst.process_material
+	if material:
+		burst.process_material = material.duplicate()
+		material = burst.process_material
+	if material is ParticleProcessMaterial:
+		material.color = _collision_burst_color_for_element()
+
+	burst.emitting = false
+	_get_effect_parent().add_child(burst)
+	burst.global_position = collision_point
+	burst.restart()
+	burst.emitting = true
+
+	var free_timer = get_tree().create_timer(burst.lifetime + 0.25)
+	free_timer.timeout.connect(Callable(burst, "queue_free"))
+
+
+func _get_effect_parent() -> Node:
+	var current_scene = get_tree().current_scene
+	if current_scene:
+		return current_scene
+	if get_parent():
+		return get_parent()
+	return self
 
 
 func _death_burst_color_for_element() -> Color:
@@ -650,5 +714,21 @@ func _death_burst_color_for_element() -> Color:
 			return Color(0.5, 0.3, 0.12, 0.85)
 		ElementType.AntiMagic:
 			return Color(0.75, 0.0, 1.0, 0.95)
+		_:
+			return visual_color
+
+
+func _collision_burst_color_for_element() -> Color:
+	match element_type:
+		ElementType.Fire:
+			return Color(1.0, 0.35, 0.05, 0.85)
+		ElementType.Wind:
+			return Color(0.55, 1.0, 0.45, 0.75)
+		ElementType.Water:
+			return Color(0.25, 0.65, 1.0, 0.8)
+		ElementType.Earth:
+			return Color(0.55, 0.32, 0.12, 0.8)
+		ElementType.AntiMagic:
+			return Color(0.75, 0.0, 1.0, 0.9)
 		_:
 			return visual_color
