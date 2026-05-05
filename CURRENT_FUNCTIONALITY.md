@@ -16,6 +16,7 @@ This document summarizes what is currently implemented for the autonomous lifefo
   - sound effects and background music
   - a stats UI
   - simple player mana-orb spawning
+  - temporary player attract/repel pulses
 
 ## Main Scene Node Structure (`lifeform.tscn`)
 - `Lifeform` (`CharacterBody3D`) with script `lifeform.gd`
@@ -249,6 +250,12 @@ This document summarizes what is currently implemented for the autonomous lifefo
   - `player_mana_spawn_enabled`
   - `player_mana_spawn_distance`
   - `player_mana_spawn_clearance_radius`
+  - `player_pulses_enabled`
+  - `player_pulse_distance`
+  - `attract_pulse_radius`
+  - `attract_pulse_duration`
+  - `repel_pulse_radius`
+  - `repel_pulse_duration`
 - Current startup defaults:
   - clears existing lifeforms
   - clears existing mana orbs
@@ -279,6 +286,14 @@ This document summarizes what is currently implemented for the autonomous lifefo
 - Press `M` to spawn a mana orb in front of the active camera.
 - Left click to spawn a mana orb along the camera/cursor ray.
 - Player-spawned mana uses the same safe-position check as normal spawning and tries nearby offsets if the preferred point is blocked.
+- The simulation manager also supports temporary player influence pulses.
+- Press `Q` to create an attract pulse at the camera/cursor point.
+  - Nearby lifeforms temporarily enter a player-attract mode using the existing `Seek` behavior.
+  - Current default radius is `18.0` and duration is `4.0` seconds.
+- Press `E` to create a repel pulse at the camera/cursor point.
+  - Nearby lifeforms temporarily enter a player-repel mode using the existing `Flee` behavior.
+  - Current default radius is `18.0` and duration is `2.0` seconds.
+- Pulses create a temporary visible glowing sphere and light that fade out as the influence expires.
 
 ## Stats UI
 - `SimulationStatsUI` is a `CanvasLayer` in `world.tscn`.
@@ -327,6 +342,8 @@ This document summarizes what is currently implemented for the autonomous lifefo
 - `MODE_PURSUE`: AntiMagic chases non-AntiMagic prey.
 - `MODE_FLEE`: non-AntiMagic escapes AntiMagic predators.
 - `MODE_COUNTER_ATTACK`: non-AntiMagic pursues a predator when it gets close enough to force a collision.
+- `MODE_PLAYER_ATTRACT`: temporary player-triggered seek toward a pulse point.
+- `MODE_PLAYER_REPEL`: temporary player-triggered flee away from a pulse point.
 
 ## Pursuit / Flee / Counter-Attack
 - AntiMagic lifeforms pursue only non-AntiMagic lifeforms.

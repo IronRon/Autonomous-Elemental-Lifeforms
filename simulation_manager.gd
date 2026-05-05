@@ -23,12 +23,19 @@ extends Node
 @export var player_mana_spawn_enabled: bool = true
 @export var player_mana_spawn_distance: float = 15.0
 @export var player_mana_spawn_clearance_radius: float = 2.0
+@export var player_pulses_enabled: bool = true
+@export var player_pulse_distance: float = 15.0
+@export var attract_pulse_radius: float = 18.0
+@export var attract_pulse_duration: float = 4.0
+@export var repel_pulse_radius: float = 18.0
+@export var repel_pulse_duration: float = 2.0
 
 var _rng := RandomNumberGenerator.new()
 var _mana_orb_relocation_timer: Timer
 var total_deaths: int = 0
 var total_evolutions: int = 0
 var _player_spawned_mana_count: int = 0
+var _player_pulse_count: int = 0
 
 
 func _ready() -> void:
@@ -42,12 +49,17 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not player_mana_spawn_enabled:
-		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
-		_spawn_player_mana_orb_in_front_of_camera()
-		get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if player_mana_spawn_enabled and event.keycode == KEY_M:
+			_spawn_player_mana_orb_in_front_of_camera()
+			get_viewport().set_input_as_handled()
+		elif player_pulses_enabled and event.keycode == KEY_Q:
+			_spawn_player_pulse_from_cursor("player_attract")
+			get_viewport().set_input_as_handled()
+		elif player_pulses_enabled and event.keycode == KEY_E:
+			_spawn_player_pulse_from_cursor("player_repel")
+			get_viewport().set_input_as_handled()
+	elif player_mana_spawn_enabled and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_spawn_player_mana_orb_from_cursor(event.position)
 		get_viewport().set_input_as_handled()
 
@@ -192,6 +204,90 @@ func _spawn_player_mana_orb_from_cursor(cursor_position: Vector2) -> void:
 	var direction = camera.project_ray_normal(cursor_position)
 	var spawn_position = origin + direction * player_mana_spawn_distance
 	_spawn_player_mana_orb_at(_safe_player_mana_position(spawn_position))
+
+
+func _spawn_player_pulse_from_cursor(mode: String) -> void:
+	var camera = get_viewport().get_camera_3d()
+	if camera == null:
+		return
+
+	var cursor_position = get_viewport().get_mouse_position()
+	var origin = camera.project_ray_origin(cursor_position)
+	var direction = camera.project_ray_normal(cursor_position)
+	var pulse_position = origin + direction * player_pulse_distance
+	_spawn_player_pulse_at(pulse_position, mode)
+
+
+func _spawn_player_pulse_at(pulse_position: Vector3, mode: String) -> void:
+	var radius = attract_pulse_radius
+	var duration = attract_pulse_duration
+	var color = Color(0.25, 0.85, 1.0, 0.28)
+	if mode == "player_repel":
+		radius = repel_pulse_radius
+		duration = repel_pulse_duration
+		color = Color(1.0, 0.25, 0.55, 0.28)
+
+	var pulse_point = _create_player_pulse_point(pulse_position, radius, duration, color, mode)
+	_apply_player_pulse_to_lifeforms(pulse_point, mode, radius, duration)
+
+
+func _create_player_pulse_point(pulse_position: Vector3, radius: float, duration: float, color: Color, mode: String) -> Node3D:
+	var parent = get_tree().current_scene
+	if parent == null:
+		parent = get_parent()
+	if parent == null:
+		parent = self
+
+	_player_pulse_count += 1
+	var point = Node3D.new()
+	point.name = ("AttractPulse" if mode == "player_attract" else "RepelPulse") + str(_player_pulse_count)
+	parent.add_child(point)
+	point.global_position = pulse_position
+	point.scale = Vector3.ONE * 0.1
+
+	var mesh = MeshInstance3D.new()
+	mesh.name = "PulseVisual"
+	var sphere = SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	mesh.mesh = sphere
+	var material = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b, 1.0)
+	material.emission_energy_multiplier = 0.8
+	mesh.material_override = material
+	point.add_child(mesh)
+
+	var light = OmniLight3D.new()
+	light.name = "PulseLight"
+	light.light_color = Color(color.r, color.g, color.b, 1.0)
+	light.light_energy = 0.8
+	light.omni_range = min(radius, 20.0)
+	point.add_child(light)
+
+	var tween = point.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(point, "scale", Vector3.ONE * radius, min(0.35, duration * 0.5)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(material, "albedo_color", Color(color.r, color.g, color.b, 0.0), duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(material, "emission_energy_multiplier", 0.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(light, "light_energy", 0.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.set_parallel(false)
+	tween.tween_callback(Callable(point, "queue_free"))
+
+	return point
+
+
+func _apply_player_pulse_to_lifeforms(pulse_point: Node3D, mode: String, radius: float, duration: float) -> void:
+	for lifeform in get_tree().get_nodes_in_group("lifeforms"):
+		if lifeform == null or not is_instance_valid(lifeform) or not (lifeform is Node3D):
+			continue
+		if lifeform.global_position.distance_to(pulse_point.global_position) > radius:
+			continue
+		var brain = lifeform.get_node_or_null("LifeformBrain")
+		if brain and brain.has_method("apply_player_influence"):
+			brain.apply_player_influence(pulse_point, mode, duration)
 
 
 func _spawn_player_mana_orb_at(spawn_position: Vector3) -> void:

@@ -27,6 +27,8 @@ var leader_boid: Boid
 var follower_slot: int = -1
 var current_threat: Boid = null  # The predator we're fleeing from
 var current_prey: Boid = null  # The prey we're pursuing
+var player_influence_target: Node3D = null
+var player_influence_timer: float = 0.0
 
 const MODE_WANDER = "wander"
 const MODE_LEADER = "leader"
@@ -35,6 +37,8 @@ const MODE_SEEK = "seek"
 const MODE_PURSUE = "pursue"
 const MODE_FLEE = "flee"
 const MODE_COUNTER_ATTACK = "counter_attack"  # Prey pursues predator when cornered
+const MODE_PLAYER_ATTRACT = "player_attract"
+const MODE_PLAYER_REPEL = "player_repel"
 
 const SLOT_LEFT = 0
 const SLOT_RIGHT = 1
@@ -54,6 +58,10 @@ func _physics_process(delta):
 
 	if boid.element_type == boid.ElementType.AntiMagic and (current_mode == MODE_FLEE or current_mode == MODE_COUNTER_ATTACK):
 		_set_wander_mode()
+		return
+
+	if current_mode == MODE_PLAYER_ATTRACT or current_mode == MODE_PLAYER_REPEL:
+		_update_player_influence(delta)
 		return
 
 	# Check for threats (predators) in DetectionArea - prioritize threat avoidance.
@@ -194,6 +202,26 @@ func on_lifeform_death() -> void:
 	leader_boid = null
 	current_threat = null
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
+
+
+func apply_player_influence(target: Node3D, mode: String, duration: float) -> void:
+	if boid == null or target == null or duration <= 0.0:
+		return
+	if mode != MODE_PLAYER_ATTRACT and mode != MODE_PLAYER_REPEL:
+		return
+
+	if current_mode == MODE_FOLLOWER:
+		_release_slot()
+
+	current_mode = mode
+	current_partner = null
+	current_threat = null
+	current_prey = null
+	player_influence_target = target
+	player_influence_timer = duration
+	_apply_player_influence_behavior()
 
 
 func _find_same_element_partner():
@@ -367,6 +395,8 @@ func _set_wander_mode() -> void:
 	current_partner = null
 	current_threat = null
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
 	boid.get_node("Wander").enabled = true
@@ -381,6 +411,8 @@ func _set_leader_mode() -> void:
 	current_partner = null
 	current_threat = null
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
 	_merge_check_timer = max(0.001, merge_check_interval)
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
@@ -403,6 +435,8 @@ func _set_follower_mode(partner: Boid) -> void:
 	current_partner = partner
 	current_threat = null
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
 	leader_boid = partner
 	follower_slot = slot
 	boid.set_enabled_all(false)
@@ -432,6 +466,8 @@ func _set_pursue_mode(prey: Boid) -> void:
 	current_partner = null
 	current_threat = null
 	current_prey = prey
+	player_influence_target = null
+	player_influence_timer = 0.0
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
 	var pursue = boid.get_node("Pursue")
@@ -454,6 +490,8 @@ func _set_flee_mode(threat: Boid) -> void:
 	current_partner = null
 	current_threat = threat
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
 	var flee = boid.get_node("Flee")
@@ -476,6 +514,8 @@ func _set_counter_attack_mode(threat: Boid) -> void:
 	current_partner = null
 	current_threat = threat
 	current_prey = null
+	player_influence_target = null
+	player_influence_timer = 0.0
 	boid.set_enabled_all(false)
 	_enable_always_on_behaviors()
 	var pursue = boid.get_node("Pursue")
@@ -491,6 +531,30 @@ func _enable_always_on_behaviors() -> void:
 	var avoidance = boid.get_node_or_null("Avoidance")
 	if avoidance:
 		avoidance.enabled = true
+
+
+func _update_player_influence(delta: float) -> void:
+	player_influence_timer -= delta
+	if player_influence_timer <= 0.0 or not is_instance_valid(player_influence_target):
+		_set_wander_mode()
+		return
+	_apply_player_influence_behavior()
+
+
+func _apply_player_influence_behavior() -> void:
+	boid.set_enabled_all(false)
+	_enable_always_on_behaviors()
+
+	if current_mode == MODE_PLAYER_ATTRACT:
+		var seek = boid.get_node_or_null("Seek")
+		if seek:
+			seek.target = player_influence_target
+			seek.enabled = true
+	elif current_mode == MODE_PLAYER_REPEL:
+		var flee = boid.get_node_or_null("Flee")
+		if flee:
+			flee.enemy_boid = player_influence_target
+			flee.enabled = true
 
 
 func _counter_attack_threat_only() -> void:
