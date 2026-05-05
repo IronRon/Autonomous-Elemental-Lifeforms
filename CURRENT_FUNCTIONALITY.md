@@ -11,7 +11,21 @@ This document summarizes what is currently implemented for the lifeform prototyp
 - `Lifeform` (`CharacterBody3D`) with script `lifeform.gd`
 - `CollisionShape3D`
 - `Visual` (`MeshInstance3D`)
+  - Level-1 face meshes:
+    - `LeftEye`
+    - `RightEye`
+    - `Mouth`
+  - Level-1 element accessory meshes:
+    - `FireCrest`
+    - `WindWingLeft`
+    - `WindWingRight`
+    - `WaterDrop`
+    - `EarthPebbleLeft`
+    - `EarthPebbleRight`
+    - `AntiHornLeft`
+    - `AntiHornRight`
 - `DetectionArea` (`Area3D`) + child collision shape
+- `ResourceDetection` (`Area3D`) + child collision shape
 - `LifeformBrain` (`Node`) with script `lifeform_brain.gd`
 - Steering behavior nodes:
   - `Constrain`
@@ -24,6 +38,9 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `OffsetPursue`
   - plus optional behavior nodes already present
 - `LifeformStats` (`Node`) with script `lifeform_stats.gd`
+- `TrailParticles` (`GPUParticles3D`)
+- `DeathBurstParticles` (`GPUParticles3D`)
+- `CollisionBurstParticles` (`GPUParticles3D`)
 
 ## World / Environment (`world.tscn`)
 - Main world scene instances a separate `environment.tscn` scene.
@@ -60,7 +77,51 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - Water -> blue
   - Earth -> brown
   - AntiMagic -> black
+- Updates level-based mesh and visual presentation:
+  - Level 1 -> sphere
+  - Level 2 -> box
+  - Level 3+ -> capsule
+- Updates level-1 face, accessories, trails, death burst color, and collision burst color when the element or level changes.
 - Syncs values into `LifeformStats` node.
+
+## Lifeform Visual Design (Implemented)
+- Level-1 lifeforms remain simple elemental orb characters.
+- Each level-1 orb has simple face meshes:
+  - two black sphere eyes
+  - one black capsule mouth
+- Face layout is element-specific:
+  - Fire: sharper angled eyes and expressive mouth for an aggressive look.
+  - Wind: wider, lighter expression.
+  - Water: softer/lower expression.
+  - Earth: lower, heavier, more grounded expression.
+  - AntiMagic: sharper purple-emissive face details.
+- Each level-1 element has a small extra accessory:
+  - Fire: small flame-like crest using a tapered cylinder mesh.
+  - Wind: two small wing shapes.
+  - Water: small droplet shape.
+  - Earth: two pebble/rock shapes.
+  - AntiMagic: two horn shapes using tapered cylinder meshes.
+- Faces and accessories are hidden for evolved level-2 and level-3+ lifeforms, so higher levels keep their simpler evolution silhouettes for now.
+
+## Particle Effects (Implemented)
+- Particle effects are scene-node based in `lifeform.tscn`, not created entirely from code.
+- `TrailParticles`:
+  - A lightweight continuous `GPUParticles3D` trail attached to each lifeform.
+  - Uses a small sphere draw pass.
+  - Color is updated from the lifeform element.
+  - The script duplicates the particle process material per instance so different elements can keep different trail colors.
+- `DeathBurstParticles`:
+  - A one-shot `GPUParticles3D` burst used when a lifeform dies.
+  - On death, the node is detached/reparented to the current scene before the lifeform is freed.
+  - This lets the burst finish after the lifeform itself is removed.
+  - Color is updated from the lifeform element.
+- `CollisionBurstParticles`:
+  - A small one-shot `GPUParticles3D` burst used for combat collisions.
+  - The node acts as a template and is duplicated per collision, so it can be reused repeatedly.
+  - The burst plays at the midpoint between the two colliding lifeforms.
+  - Each combatant triggers its own small burst, so collisions can show two overlapping element-colored bursts.
+- Particle draw meshes use materials with `vertex_color_use_as_albedo = true`.
+  - This is required for `ParticleProcessMaterial.color` to show up instead of particles rendering white.
 
 ## `lifeform_stats.gd` (Stats Data Node)
 - Holds exported data copy of identity and gameplay stats.
@@ -388,4 +449,5 @@ Combat damage is resolved using **slide collision detection** from `move_and_sli
 - **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
 - **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.
 - **Advanced Environment Navigation:** More precise ground-aware placement, nav/pathfinding, or obstacle-aware target selection.
-- **Polish Effects:** Death particles, collision particles, and combat sound effects.
+- **Combat Sound Effects:** Collision, death, pickup, and evolution sounds.
+- **Advanced Evolution Visuals:** Distinct authored meshes/models for level-2 and level-3 elemental evolutions.
