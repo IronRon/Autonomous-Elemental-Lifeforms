@@ -1,21 +1,38 @@
 # Current Functionality Snapshot
 
-This document summarizes what is currently implemented for the lifeform prototype.
+This document summarizes what is currently implemented for the autonomous lifeform simulation prototype.
 
-## Lifeform Overview
-- A lifeform is a `CharacterBody3D` using `Boid`-based steering movement.
-- It has configurable stats and element identity.
-- It can wander by default and form a leader/follower pair with another compatible lifeform.
+## Project Overview
+- The project is a 3D Godot autonomous agents simulation.
+- Elemental lifeforms use boid-style steering to wander, seek resources, form groups, evolve, flee, pursue, collide, and die.
+- The main demo scene is `world.tscn`.
+- The current simulation includes:
+  - procedural lifeform visuals for levels 1, 2, and 3
+  - mana orb resources
+  - environment collision, avoidance, and arena constraint
+  - safe random spawning
+  - mana relocation
+  - combat effects
+  - sound effects and background music
+  - a stats UI
+  - simple player mana-orb spawning
 
 ## Main Scene Node Structure (`lifeform.tscn`)
 - `Lifeform` (`CharacterBody3D`) with script `lifeform.gd`
 - `CollisionShape3D`
 - `Visual` (`MeshInstance3D`)
-  - Level-1 face meshes:
+  - Main body mesh, changed procedurally by level:
+    - Level 1: sphere
+    - Level 2: box
+    - Level 3+: capsule
+  - `EvolutionVisualRoot`
+    - Empty runtime root kept for future evolved visual experiments.
+    - Current code clears any children and uses procedural meshes instead of imported model scenes.
+  - Face meshes:
     - `LeftEye`
     - `RightEye`
     - `Mouth`
-  - Level-1 element accessory meshes:
+  - Element accessory meshes:
     - `FireCrest`
     - `WindWingLeft`
     - `WindWingRight`
@@ -24,8 +41,8 @@ This document summarizes what is currently implemented for the lifeform prototyp
     - `EarthPebbleRight`
     - `AntiHornLeft`
     - `AntiHornRight`
-- `DetectionArea` (`Area3D`) + child collision shape
-- `ResourceDetection` (`Area3D`) + child collision shape
+- `DetectionArea` (`Area3D`) for social/combat detection
+- `ResourceDetection` (`Area3D`) for mana orb detection
 - `LifeformBrain` (`Node`) with script `lifeform_brain.gd`
 - Steering behavior nodes:
   - `Constrain`
@@ -36,193 +53,185 @@ This document summarizes what is currently implemented for the lifeform prototyp
   - `Flee`
   - `Pursue`
   - `OffsetPursue`
-  - plus optional behavior nodes already present
 - `LifeformStats` (`Node`) with script `lifeform_stats.gd`
 - `TrailParticles` (`GPUParticles3D`)
 - `DeathBurstParticles` (`GPUParticles3D`)
 - `CollisionBurstParticles` (`GPUParticles3D`)
-- `DeathSound` (`AudioStreamPlayer3D`) with death audio stream
-- `CollisionSound` (`AudioStreamPlayer3D`) with collision audio stream
+- `DeathSound` (`AudioStreamPlayer3D`)
+- `CollisionSound` (`AudioStreamPlayer3D`)
 
 ## World / Environment (`world.tscn`)
 - Main world scene instances a separate `environment.tscn` scene.
-- Current environment uses KayKit-style low-poly assets for a simple playable space.
-- World includes an invisible large `StaticBody3D` floor/collision volume on collision layer 2.
-- Environment rocks, walls, mountains, pillars, and other obstacles should use physics collision on layer 2 so:
-  - lifeforms can avoid them with `Avoidance`
-  - simulation spawn checks can reject blocked positions
-  - mana orbs can avoid teleporting inside scenery
-- `ObserverCamera` uses `camera_free_fly.gd` for inspection.
+- Current environment uses KayKit-style low-poly assets and user-added floating rocks.
+- Environment collision is expected on layer 2 so lifeforms can avoid obstacles and spawn checks can reject blocked positions.
+- `WorldEnvironment` has glow enabled so mana orbs and emissive effects read better.
+- `ObserverCamera` uses `camera_free_fly.gd` for free-fly inspection.
+- `BackgroundMusic` plays quiet looping background audio through `background_music.gd`.
+- `SimulationStatsUI` displays live simulation statistics.
 
 ## Collision Layer / Mask Conventions
 - Layer 1: lifeforms.
 - Layer 2: environment / obstacle collision.
 - Layer 3: mana orbs.
-- Lifeform root collision mask currently includes environment obstacles for movement/avoidance.
-- `ResourceDetection` uses collision mask 4, meaning it only detects layer 3 mana orbs.
-- `ManaOrb` root uses collision layer 4, meaning it lives on layer 3.
-- KayKit or custom environment collision must be assigned to layer 2 for avoidance and safe spawning to work.
+- Lifeform root collision mask includes environment obstacles for physical movement and avoidance.
+- `ResourceDetection` uses the mana-orb layer so lifeforms detect orbs separately from other lifeforms.
+- `ManaOrb` root uses the mana-orb collision layer.
+- Environment meshes must have physics bodies/collision shapes. Avoidance reacts to collision, not visual mesh surfaces by themselves.
 
-## `lifeform.gd` (Root Controller)
-- Extends `Boid` and exposes main editable properties:
-  - `element_type`, `level`, `visual_color`
-  - `size_multiplier`, `strength`, `speed_multiplier`
-  - `base_max_speed`, `base_mass`
+## `lifeform.gd` Root Controller
+- Extends `Boid`.
+- Exposes editable identity and stat properties:
+  - `element_type`
+  - `level`
+  - `visual_color`
+  - `size_multiplier`
+  - `strength`
+  - `speed_multiplier`
+  - `base_max_speed`
+  - `base_mass`
+  - `trail_enabled`
 - Applies stat effects to movement/body:
   - `max_speed = base_max_speed * speed_multiplier`
   - `mass = base_mass / strength`
   - `scale = Vector3.ONE * size_multiplier`
-- Assigns a unique material to `Visual` and updates color.
 - Auto-maps element to color:
-  - Fire -> red
-  - Wind -> green
-  - Water -> blue
-  - Earth -> brown
-  - AntiMagic -> black
-- Updates level-based mesh and visual presentation:
-  - Level 1 -> sphere
-  - Level 2 -> box
-  - Level 3+ -> capsule
-- Updates level-1 face, accessories, trails, death burst color, and collision burst color when the element or level changes.
-- Syncs values into `LifeformStats` node.
+  - Fire: red
+  - Wind: green
+  - Water: blue
+  - Earth: brown
+  - AntiMagic: black/purple accents
+- Updates level-based mesh:
+  - Level 1: `SphereMesh`
+  - Level 2: `BoxMesh`
+  - Level 3+: `CapsuleMesh`
+- Updates face placement, accessory placement, trail color, death burst color, and collision burst color when element or level changes.
+- Syncs values into the `LifeformStats` node.
+- Tracks combat stats:
+  - `attack_energy`
+  - `max_attack_energy`
+  - `health`
+  - `collision_impulse_strength`
+- Notifies the simulation manager when a lifeform dies.
 
-## Lifeform Visual Design (Implemented)
-- Level-1 lifeforms remain simple elemental orb characters.
-- Each level-1 orb has simple face meshes:
-  - two black sphere eyes
-  - one black capsule mouth
-- Face layout is element-specific:
-  - Fire: sharper angled eyes and expressive mouth for an aggressive look.
+## Lifeform Visual Design
+- Level 1 lifeforms are elemental orb characters.
+- Level 2 lifeforms become larger box-shaped evolved forms.
+- Level 3 lifeforms become larger capsule-shaped evolved forms.
+- Faces and accessories remain visible on all levels and are repositioned/scaled for the active body shape.
+- Face layouts are element-specific:
+  - Fire: sharper aggressive eyes and mouth.
   - Wind: wider, lighter expression.
   - Water: softer/lower expression.
-  - Earth: lower, heavier, more grounded expression.
-  - AntiMagic: sharper purple-emissive face details.
-- Each level-1 element has a small extra accessory:
-  - Fire: small flame-like crest using a tapered cylinder mesh.
-  - Wind: two small wing shapes.
-  - Water: small droplet shape.
+  - Earth: lower, heavier, grounded expression.
+  - AntiMagic: sharp purple-emissive face details.
+- Each element has a small accessory:
+  - Fire: flame-like crest using a tapered cylinder mesh.
+  - Wind: two wing shapes.
+  - Water: droplet shape.
   - Earth: two pebble/rock shapes.
   - AntiMagic: two horn shapes using tapered cylinder meshes.
-- Faces and accessories are hidden for evolved level-2 and level-3+ lifeforms, so higher levels keep their simpler evolution silhouettes for now.
 
-## Particle Effects (Implemented)
-- Particle effects are scene-node based in `lifeform.tscn`, not created entirely from code.
+## Particle Effects
+- Particle effects are scene-node based in `lifeform.tscn`.
 - `TrailParticles`:
-  - A lightweight continuous `GPUParticles3D` trail attached to each lifeform.
-  - Uses a small sphere draw pass.
+  - Lightweight continuous trail attached to each lifeform.
   - Color is updated from the lifeform element.
-  - The script duplicates the particle process material per instance so different elements can keep different trail colors.
+  - Process material is duplicated per instance so each element can have its own color.
 - `DeathBurstParticles`:
-  - A one-shot `GPUParticles3D` burst used when a lifeform dies.
-  - On death, the node is detached/reparented to the current scene before the lifeform is freed.
-  - This lets the burst finish after the lifeform itself is removed.
+  - One-shot burst when a lifeform dies.
+  - Reparented to the current scene before the lifeform is freed, allowing the burst to finish.
   - Color is updated from the lifeform element.
 - `CollisionBurstParticles`:
-  - A small one-shot `GPUParticles3D` burst used for combat collisions.
-  - The node acts as a template and is duplicated per collision, so it can be reused repeatedly.
-  - The burst plays at the midpoint between the two colliding lifeforms.
-  - Each combatant triggers its own small burst, so collisions can show two overlapping element-colored bursts.
-- Particle draw meshes use materials with `vertex_color_use_as_albedo = true`.
-  - This is required for `ParticleProcessMaterial.color` to show up instead of particles rendering white.
+  - Small one-shot burst used for combat collisions.
+  - Duplicated from a template node per collision.
+  - Plays at the midpoint between two colliding lifeforms.
+  - Each combatant creates its own colored burst, giving two overlapping elemental bursts.
+- Particle draw meshes use materials with `vertex_color_use_as_albedo = true` so `ParticleProcessMaterial.color` shows instead of rendering white.
 
-## `lifeform_stats.gd` (Stats Data Node)
-- Holds exported data copy of identity and gameplay stats.
-- Can copy from a lifeform root (`copy_from_lifeform`).
-- Can apply back to a lifeform root (`apply_to_lifeform`).
+## Sound Effects
+- Mana pickup:
+  - `mana_orb.tscn` has `PickupSound` (`AudioStreamPlayer3D`).
+  - The sound plays during the pickup flash before the orb frees itself.
+- Lifeform death:
+  - `lifeform.tscn` has `DeathSound` (`AudioStreamPlayer3D`).
+  - The sound is reparented to the current scene so it continues after the dead lifeform is freed.
+- Combat collision:
+  - `lifeform.tscn` has `CollisionSound` (`AudioStreamPlayer3D`).
+  - A duplicate sound player is spawned at the collision midpoint for each combat hit.
+- Evolution:
+  - `lifeform_brain.gd` exports `evolution_sound`.
+  - On merge, it creates a temporary `AudioStreamPlayer3D` at the merge position.
+- Background music:
+  - `world.tscn` has a quiet `BackgroundMusic` `AudioStreamPlayer`.
 
-## `lifeform_brain.gd` (Behavior Selection)
+## `lifeform_brain.gd` Behavior Selection
 - Default mode is `wander`.
-- `Constrain` and `Avoidance` are treated as always-on support steering.
-  - The brain re-enables them after every `boid.set_enabled_all(false)` state reset.
-  - This means wander, seek, pursue, flee, counter-attack, leader, and follower modes all keep arena/obstacle steering active.
-- Finds compatible nearby lifeforms using `DetectionArea`:
-  - same element (configurable)
-  - same level (configurable)
-- Chooses leader/follower role deterministically (instance ID).
+- `Constrain` and `Avoidance` are always-on support steering.
+  - The brain re-enables them after every behavior reset.
+  - Wander, seek, pursue, flee, counter-attack, leader, and follower modes all keep arena and obstacle steering active.
+- Finds compatible nearby lifeforms using `DetectionArea`.
+- Compatibility is based on:
+  - same element
+  - level rules for current merge target
+- Chooses leader/follower role deterministically using instance IDs.
 - Follower behavior:
-  - Uses `OffsetPursue` only.
-  - Claims one of two follower slots around leader:
-    - left diagonal
-    - right diagonal
-  - Uses configurable formation distances (`formation_offset_x`, `formation_offset_z`).
-- If leader is removed/invalid, follower drops formation and returns to default wander.
+  - Uses `OffsetPursue`.
+  - Claims one of two slots around the leader.
+  - Slot offsets are controlled by `formation_offset_x` and `formation_offset_z`.
+- If the leader becomes invalid, followers release their slot and return to wander.
 
-### Evolution / Merge (Implemented)
-- Leader-driven merge: when a `leader` has two occupied follower slots and all three
-  are level 1 and the same element, the leader spawns a single level-2 lifeform and
-  removes the three originals.
-- Merge is checked on a configurable interval (`merge_check_interval`, default 5s)
-  to avoid per-frame checks.
-- Visual differentiation: level-1 uses a `SphereMesh`; level-2 uses a `BoxMesh`.
-- Spawned level-2 defaults: `size_multiplier = 1.5`, `speed_multiplier = 0.8`,
-  `strength = 1.2`. These are configurable per instance after merge.
+## Evolution / Merge
+- Evolution is leader-driven.
+- A leader checks merge conditions on `merge_check_interval` rather than every frame.
+- Level 2 evolution:
+  - A level 1 leader with two level 1 same-element followers merges into one level 2 lifeform.
+- Level 3 evolution:
+  - A level 2 leader with two same-element followers can merge into one level 3 lifeform.
+  - Followers can be a mix of level 1 and level 2 when `allow_mixed_level_3_merge` is enabled.
+- `max_evolution_level` currently limits evolution to level 3.
+- When a merge occurs:
+  - new lifeform spawns at the average group position
+  - new lifeform copies the element type
+  - level-specific defaults are applied
+  - evolution sound plays
+  - simulation manager records an evolution
+  - original lifeforms are freed
+- Current evolution defaults:
+  - Level 2: `size_multiplier = 1.5`, `speed_multiplier = 0.8`, `strength = 1.2`
+  - Level 3: `size_multiplier = 2.2`, `speed_multiplier = 0.65`, `strength = 1.6`, `attack_energy = 3`, `health = 6`
 
-## `OffsetPursue` Role in Formation
-- Follower tracks a local offset around leader and arrives toward predicted target position.
-- Custom offset mode is enabled by brain for formation slots.
-- Typical offsets are in meter-like world units (e.g. 1.0 to 2.0).
-
-## World Camera (`camera_free_fly.gd`)
-- Simple observer camera for 3D inspection.
-- Controls:
-  - Move: `W A S D`
-  - Vertical: `Space` up, `Shift` down
-  - Sprint: `Ctrl`
-  - Mouse look when captured
-  - `Esc`: release mouse
-  - `Tab`: capture mouse
-
-## Mana Orb System (Implemented)
-- `ManaOrb` is a `StaticBody3D` with an `energy_amount` export (default: 1).
-- Root node: `StaticBody3D` with attached script `mana_orb.gd`.
-- Mana orb root is in the `mana_orbs` group.
-- Mana orb root collision layer is layer 3.
+## Mana Orb System
+- `ManaOrb` is a `StaticBody3D` with script `mana_orb.gd`.
+- It has `energy_amount` export, default `1`.
+- Mana orbs are in the `mana_orbs` group.
 - Child nodes:
-  - `PickupArea` (Area3D) with collision shape for detecting lifeforms.
-  - `GlowLight` (OmniLight3D) for dynamic glow effect.
-  - `MeshInstance3D` (orb mesh with glowing material).
-  - `OutlineMesh` (optional outline for pickup effect).
-  - `PickupSound` (AudioStreamPlayer3D) for pickup audio.
-- When a lifeform body enters the PickupArea:
-  1. Mana orb notifies the lifeform's brain via `on_orb_picked(self)`
-  2. Lifeform gains energy via `add_attack_energy(energy_amount)`
-  3. Pickup animation plays (see below)
-  4. Mana orb frees itself after sound finishes
-- Lifeforms detect orbs using a separate `ResourceDetection` area with configurable `resource_detection_radius`.
-- `ResourceDetection` only masks mana-orb layer 3, so it no longer mistakes other lifeforms for resources.
-- `_find_nearest_mana_orb()` filters targets to actual `ManaOrb` instances and scans all overlapping orbs before choosing the nearest.
-- Seeking orbs: lifeforms in `MODE_WANDER` with `attack_energy < max_attack_energy` will seek the nearest orb.
-  - Enters `MODE_SEEK` and disables other behaviors.
-  - `Constrain` and `Avoidance` remain active during seek.
-  - Stays in `MODE_SEEK` until orb is picked or freed.
-  - Returns to `MODE_WANDER` after pickup.
+  - `PickupArea`
+  - `GlowLight`
+  - main mesh
+  - `OutlineMesh`
+  - `PickupSound`
+- Idle animation:
+  - smooth scale pulse
+  - pulsing light energy
+  - pulsing emission energy
+- Pickup flow:
+  1. Pickup area detects a lifeform.
+  2. The orb notifies the lifeform brain with `on_orb_picked(self)`.
+  3. The lifeform gains attack energy.
+  4. Pickup collision is disabled.
+  5. Orb flashes, expands, reveals/fades outline, and fades its material.
+  6. Pickup sound plays.
+  7. Orb frees itself after the sound has time to finish.
+- Lifeforms seek mana orbs when wandering and below max attack energy.
 
-### Mana Orb Idle Animation (Implemented)
-- Orbs continuously pulse with smooth scale and glow animations:
-  - **Scale pulse:** oscillates ±12% based on `pulse_scale_amount` (configurable).
-  - **Glow pulse:** light energy and emission multiplier pulse to 75%-125% of base glow value.
-  - **Speed:** pulse frequency controlled by `pulse_speed` export (default: 3.0).
-- Glow light (`GlowLight`) dynamically illuminates surroundings and pulses in sync with the orb mesh emission.
-- Orb material emission color is cyan-blue (0.25, 0.8, 1.0) for visual distinction.
-
-### Mana Orb Pickup Animation & Sound (Implemented)
-When a lifeform collects an orb:
-1. **Collision stop:** pickup area is disabled and collision shape is turned off immediately.
-2. **Flash boost:** glow light and emission energy brighten to 3x for visual pop.
-3. **Scale expand:** orb grows to 1.8x its base scale over `pickup_flash_time` (0.22s by default).
-4. **Outline reveal:** outline mesh appears and smoothly fades out as main mesh fades to transparent.
-5. **Pickup sound:** `PickupSound` plays (configurable audio stream).
-6. **Fade to disappear:** orb waits for sound to finish playing, then fades completely and is freed.
-- Tweens are set to parallel to animate all effects simultaneously during the flash phase.
-- Orb removal is deferred until after pickup sound completes, ensuring audio plays in full.
-
-## Simulation Manager (`simulation_manager.gd`) (Implemented)
+## Simulation Manager
 - `SimulationManager` is a world-level node in `world.tscn`.
-- Runtime setup is deferred with `call_deferred("_start_simulation")` so it can safely add children after scene setup.
-- Configurable exports:
+- Runtime setup is deferred with `call_deferred("_start_simulation")` so children can be added safely after scene setup.
+- Configurable exports include:
   - `lifeform_scene`
   - `mana_orb_scene`
   - `spawn_parent_path`
+  - `use_evolution_test_spawn`
   - `clear_existing_lifeforms`
   - `clear_existing_mana_orbs`
   - `lifeforms_per_element`
@@ -237,263 +246,128 @@ When a lifeform collects an orb:
   - `spawn_blocking_collision_mask`
   - `max_spawn_attempts`
   - `random_seed`
-- Default startup behavior:
-  - clears existing nodes in group `lifeforms`
-  - clears existing nodes in group `mana_orbs`
-  - spawns 5 lifeforms for each element type
-  - spawns 15 mana orbs
-  - places both lifeforms and mana orbs randomly within `spawn_radius`
-- Anti-magic lifeforms spawned by the manager receive boosted defaults:
+  - `player_mana_spawn_enabled`
+  - `player_mana_spawn_distance`
+  - `player_mana_spawn_clearance_radius`
+- Current startup defaults:
+  - clears existing lifeforms
+  - clears existing mana orbs
+  - spawns `lifeforms_per_element` lifeforms for each element, currently 9 per element
+  - spawns `mana_orb_count` mana orbs, currently 15
+  - places lifeforms and mana orbs randomly within `spawn_radius`
+- AntiMagic lifeforms spawned by the manager receive boosted defaults:
   - `base_max_speed = 5.0`
   - `health = 5.0`
 - If `random_seed` is 0, spawn placement is randomized each run.
 - If `random_seed` is non-zero, spawn placement is repeatable.
+- Tracks totals:
+  - `total_deaths`
+  - `total_evolutions`
 
 ## Safe Spawning / Mana Orb Relocation
 - Lifeforms and mana orbs use physics overlap checks before accepting random positions.
-- Spawn checks use a `SphereShape3D` against `spawn_blocking_collision_mask` (default layer 2).
+- Spawn checks use a `SphereShape3D` against `spawn_blocking_collision_mask`, default layer 2.
 - Lifeform safe placement uses `lifeform_clearance_radius`.
 - Mana orb safe placement uses `mana_orb_clearance_radius`.
 - Each placement tries up to `max_spawn_attempts` candidates before falling back to a random position.
 - Mana orbs can teleport to new random safe positions every `mana_orb_relocation_interval` seconds.
   - Default interval: 30 seconds.
   - This helps recover orbs that spawned near scenery or became unreachable.
-  - Relocation only affects nodes in the `mana_orbs` group.
 
-## Energy & Combat Stats (Implemented)
-- Each lifeform has `attack_energy` (current), `max_attack_energy` (capacity), and `health` (hit points).
+## Player Interaction
+- The simulation manager supports simple player-controlled mana spawning.
+- Press `M` to spawn a mana orb in front of the active camera.
+- Left click to spawn a mana orb along the camera/cursor ray.
+- Player-spawned mana uses the same safe-position check as normal spawning and tries nearby offsets if the preferred point is blocked.
+
+## Stats UI
+- `SimulationStatsUI` is a `CanvasLayer` in `world.tscn`.
+- Script: `simulation_stats_ui.gd`.
+- Updates every `update_interval` seconds, currently default `0.5`.
+- Displays:
+  - total live lifeforms
+  - current mana orbs
+  - total deaths
+  - total evolutions
+  - per-element counts for level 1, level 2, and level 3
+
+## Energy & Combat Stats
+- Each lifeform has:
+  - `attack_energy`
+  - `max_attack_energy`
+  - `health`
 - Defaults scale by level:
-  - Level 1: `max_attack_energy = 3`, `health = 2`
+  - Level 1: `max_attack_energy = 3`, health starts from configured value
   - Level 2: `max_attack_energy = 5`, `health = 4`
   - Level 3+: `max_attack_energy = 8`, `health = 6`
-- Method `add_attack_energy(amount)` clamps to [0, max].
-- Method `_update_attack_stats()` applies defaults based on level.
+- `add_attack_energy(amount)` clamps energy between 0 and max.
+- Combat damage is based on the other lifeform's `attack_energy`.
 
-## Detection Radii (Implemented)
-- Two separate detection areas per lifeform:
-  - `DetectionArea` (social/partner detection) with export `social_detection_radius` (default: 10.0)
-  - `ResourceDetection` (resource/orb detection) with export `resource_detection_radius` (default: 20.0)
-- Radii are applied to collision shapes in `_ready()`.
+## Detection Radii
+- `DetectionArea` is used for social/partner detection and combat threat/prey detection.
+- `ResourceDetection` is used for mana orb detection.
+- Current exported defaults:
+  - `social_detection_radius = 16.0`
+  - `resource_detection_radius = 10.0`
+- Radii are applied to their collision shapes in `_ready()`.
 
-## Arena Constraint / Obstacle Avoidance (Implemented)
+## Arena Constraint / Obstacle Avoidance
 - `Constrain` keeps lifeforms inside a circular radius.
-  - Current scene value: `radius = 100.0`.
+  - Current scene target value is around 100 meters.
   - If no `center_path` is assigned, the center is world origin.
 - `Avoidance` uses raycast feelers against the boid's collision mask.
-  - It avoids physics collision, not visual meshes by themselves.
-  - Obstacles must have `StaticBody3D` / collision shapes on a layer the lifeform can query.
+- Obstacles must have collision shapes on a layer the lifeform can query.
 - The brain keeps `Constrain` and `Avoidance` enabled in every behavior mode.
 
-## Behavior Modes (STATE MACHINE)
-- `MODE_WANDER`: default; wanders using Wander steering behavior.
-- `MODE_LEADER`: leads formation of up to 2 followers; checks for merge opportunities.
-- `MODE_FOLLOWER`: follows leader at assigned offset slot (left or right).
-- `MODE_SEEK`: seeks nearest mana orb; stable mode until pickup via `on_orb_picked()`.
-- `MODE_PURSUE`: anti-magic lifeforms chase non-anti-magic prey within DetectionArea using Pursue behavior.
-- `MODE_FLEE`: non-anti-magic lifeforms escape from anti-magic predators using Flee behavior.
-- `MODE_COUNTER_ATTACK`: (NEW) When fleeing lifeform is cornered within aggro_radius, it pursues the predator to force collision and escape via impulse separation.
+## Behavior Modes
+- `MODE_WANDER`: default roaming mode.
+- `MODE_LEADER`: leader of a two-follower formation; checks merge opportunities.
+- `MODE_FOLLOWER`: follows a leader at an assigned offset.
+- `MODE_SEEK`: seeks the nearest mana orb until pickup or target removal.
+- `MODE_PURSUE`: AntiMagic chases non-AntiMagic prey.
+- `MODE_FLEE`: non-AntiMagic escapes AntiMagic predators.
+- `MODE_COUNTER_ATTACK`: non-AntiMagic pursues a predator when it gets close enough to force a collision.
 
-### Pursuit & Flee System (Fully Implemented)
+## Pursuit / Flee / Counter-Attack
+- AntiMagic lifeforms pursue only non-AntiMagic lifeforms.
+- AntiMagic lifeforms do not flee or counter-attack.
+- Non-AntiMagic lifeforms flee AntiMagic predators that meet the level fear threshold.
+- Followers are skipped by AntiMagic prey selection to avoid breaking active formations.
+- If a fleeing lifeform is within `aggro_radius`, it switches to counter-attack mode and pursues the predator to force combat contact.
+- Target references are cleared when targets die so freed nodes are not dereferenced.
+- Pursue behavior uses close-range direct seeking to reduce endless orbiting and make collisions more likely.
 
-#### How It Works
+## Combat & Collision Resolution
+- Combat is resolved through slide collisions after `move_and_slide()`.
+- Only AntiMagic vs non-AntiMagic contacts exchange combat damage.
+- Same-element collisions and normal-element vs normal-element collisions do not deal combat damage.
+- Damage is mutual:
+  - each lifeform takes damage equal to the other lifeform's `attack_energy`
+- Per-pair cooldown prevents repeated damage every frame while bodies remain touching.
+- Collision impulse pushes both combatants apart.
+- When a lifeform dies:
+  - `is_dead` is set
+  - collision layers/masks are disabled
+  - other brains clear stale threat/prey references
+  - follower slots are released
+  - death sound and death burst play
+  - simulation manager records the death
+  - the lifeform is queued for freeing
 
-**Detection & Priority:**
-- Threat/prey detection runs at the START of every frame, BEFORE partner detection, so combat takes priority.
-- Each lifeform scans its `DetectionArea` (10m radius) for threats or prey.
-
-**For Non-Anti-Magic Lifeforms (Flee Behavior):**
-1. Scans `DetectionArea` for anti-magic predators.
-2. Only considers predators at equal or higher level (configurable via `level_fear_threshold`).
-   - Default: flee from predators at `level >= self.level`
-   - Threshold +1: flee only if `level > self.level` (accept equals)
-3. When threat detected → enters `MODE_FLEE` and enables Flee behavior.
-4. Flee behavior: uses `Flee` steering to move away from predator, predicting its future position.
-
-**For Anti-Magic Lifeforms (Pursue Behavior):**
-1. Scans `DetectionArea` for non-anti-magic lifeforms.
-2. Skips followers to avoid interrupting ally formations.
-3. When prey detected → enters `MODE_PURSUE` and enables Pursue behavior.
-4. Pursue behavior: uses `Pursue` steering (intercept prediction) to chase prey.
-   - Calculates prey's estimated position based on velocity and distance.
-   - Chases predicted intercept point rather than current position.
-
-**How Pursuit/Flee Continue Each Frame:**
-- `_pursue_prey_only()`: Maintains pursuit by:
-  - Checking if prey still exists and is valid.
-  - Checking if prey is still in `DetectionArea` (10m radius).
-  - Continuously updating pursue behavior's target each frame to track movement.
-  - Returns to `MODE_WANDER` immediately if prey disappears or leaves range.
-  
-- `_flee_from_threat_only()`: Maintains flee by:
-  - Checking if threat still exists and is valid.
-  - Checking if threat is still in `DetectionArea` (10m radius).
-  - Continuously updating flee behavior's enemy reference each frame.
-  - Returns to `MODE_WANDER` immediately if threat disappears or leaves range.
-
-#### When Pursuit/Flee Stop
-
-Pursuit or flee **exit immediately** if ANY of these conditions become true:
-
-1. **Target is Destroyed:**
-   - Prey is freed/invalid (checked via `is_instance_valid(current_prey)`).
-   - Predator is freed/invalid (checked via `is_instance_valid(current_threat)`).
-   - → Return to `MODE_WANDER` and resume normal behavior.
-
-2. **Target Leaves Detection Range:**
-   - Prey moves outside the 10m `DetectionArea` radius.
-   - Predator moves outside the 10m `DetectionArea` radius.
-   - Detection loop checks all bodies in area; if target not found → return to wander.
-
-3. **Lifeform is Freed:**
-   - When a lifeform dies or is removed, cleanup via `_exit_tree()` releases follower slots.
-   - The hunter/prey relationship ends naturally.
-
-#### Aggro Radius & Counter-Attack (NEW)
-
-When a fleeing lifeform is **cornered** by an approaching predator:
-
-- **Aggro Radius Detection:** If predator distance ≤ `aggro_radius` (export, default 2.5m):
-  - Fleeing lifeform switches from `MODE_FLEE` → `MODE_COUNTER_ATTACK`.
-  - Instead of running away, prey pursues the predator using **Pursue behavior**.
-  - This forces collision between both combatants.
-
-- **Combat & Impulse Separation:** On collision:
-  - Both take damage (mutual damage exchange).
-  - Both receive impulse push that separates them.
-  - Knockback gives prey a chance to escape.
-
-- **After Separation:**
-  - If predator is still within `aggro_radius`, prey remains in `MODE_COUNTER_ATTACK` (continues pursuit).
-  - If predator moves **outside** `aggro_radius`, prey returns to `MODE_FLEE` to resume escape.
-  - If predator leaves `DetectionArea` (>10m), prey returns to `MODE_WANDER`.
-
-- **Counter-Attack Exit Conditions:**
-  - Predator becomes invalid/freed → return to wander.
-  - Predator leaves detection area entirely → return to wander.
-  - Predator moves beyond aggro radius → return to flee.
-
-#### Example Scenario with Aggro Radius
-
-1. **Initial State:** Fire level-1 wandering, Anti-Magic level-1 wandering.
-2. **Anti-Magic Detects Fire:** Anti-magic distance 8m → enters `MODE_PURSUE`, chases Fire.
-3. **Fire Flees:** Fire detects predator 8m away → enters `MODE_FLEE`, escapes.
-4. **Predator Closes Distance:** Anti-magic continues pursuit, closes to 2.5m range.
-5. **Aggro Triggered:** Fire detects distance ≤ 2.5m aggro_radius → switches to `MODE_COUNTER_ATTACK`.
-6. **Counter-Attack Collision:** Fire pursues back with intercept prediction → collision.
-7. **Mutual Damage + Impulse:** Both take 1 damage, both receive directional push.
-8. **Separation Result:** Impulse pushes Fire away; Anti-Magic still chasing.
-9. **Re-Evaluation:** Fire checks distance → if > 2.5m, returns to `MODE_FLEE` to escape.
-10. **Chase Continues:** Anti-Magic resumes pursuit at 3-4m range, Fire flees. Cycle repeats until one escapes or dies.
-
-#### Configurable Parameters
-
-- `threat_detection_radius`: Distance at which threats/prey are detectable (export, default 10.0m).
-  - Reuses existing `DetectionArea` collision shape.
-- `level_fear_threshold`: How level difference affects fear (export, default 0).
-  - 0: flee from equal or higher level.
-  - 1: flee only from strictly higher level.
-  - -1: flee from all anti-magic (even lower level).
-- `aggro_radius`: Distance threshold at which cornered prey triggers counter-attack (export, default 2.5m).
-  - When predator enters this radius during flight, prey switches to pursuit mode.
-  - After impulse separation pushes combatants apart, threshold is checked again each frame.
-  
-#### Freed Target Guards
-
-To prevent crashes when a pursued or fleeing target is freed:
-- **`Flee.gd`** checks if `enemy_boid` is valid before dereferencing `global_transform`.
-  - Returns safely if target is already dead.
-  - Brain also clears the flee target via `clear_threat_reference()` when threat dies.
-- **`Pursue.gd`** checks if `enemy_boid` is valid before using it in calculations.
-  - Returns `Vector3.ZERO` if target is invalid.
-  - Brain clears the pursue target via `clear_prey_reference()` when prey dies.
-- When a lifeform dies, it notifies all other lifeforms to clear stale target references immediately.
-
-## Combat & Collision Resolution (Implemented)
-
-### How Collision Damage Works
-
-Combat damage is resolved using **slide collision detection** from `move_and_slide()`:
-
-1. **Per-Frame Collision Check:**
-   - After `move_and_slide()`, `Boid` calls `_resolve_combat_collisions()`.
-   - Iterates over all `get_slide_collision_count()` contacts.
-   - For each contact, calls `resolve_collision_with(other)` on the lower-instance lifeform.
-
-2. **Mutual Damage Exchange:**
-   - When an anti-magic and non-anti-magic lifeform collide:
-     - Both take damage equal to the **other's** `attack_energy`.
-     - Example: Anti (energy=1) hits Wind (energy=2):
-       - Anti takes 2 damage
-       - Wind takes 1 damage
-   - Both lifeforms must take damage in the same contact resolution, even if one dies.
-
-3. **Per-Pair Cooldown:**
-   - To prevent repeated damage from persistent contact, a cooldown dictionary tracks each pair.
-   - `combat_collision_cooldown` (export, default 0.35 seconds) sets the delay between successive hits.
-   - Same pair can only damage once every N seconds, even if still overlapping.
-
-4. **Dead State & Immediate Cleanup:**
-   - When a lifeform's `health` reaches 0, it calls `die()` immediately.
-   - `die()` sets `is_dead = true` before `queue_free()`.
-   - Dead lifeforms:
-     - Disable collision layers/masks so they stop participating in new collisions.
-     - Notify all other lifeforms to clear stale threat/prey references.
-     - Call `on_lifeform_death()` on their brain to release follower slots.
-   - This ensures dead bodies can't be damaged again or cause crashes.
-
-5. **Collision Impulse (Knockback):**
-   - On collision, both combatants receive a directional push away from each other.
-   - `collision_impulse_strength` (export, default 4.0) controls the force magnitude.
-   - Impulse is applied along the normalized direction between collision partners.
-   - Velocity is clamped to allow short burst speeds (up to `max_speed * 1.5`).
-
-### Combat Summary Example
-
-**Scenario:** Anti1 (health=2, energy=1) collides with Wind1 (health=2, energy=1)
-
-1. **Frame 1, First Collision:**
-   - Anti1 and Wind1 collide.
-   - Both take 1 damage: Anti1 health→1, Wind1 health→1.
-   - Both receive impulse pushing them apart.
-   - Cooldown is set for this pair: next damage in 0.35s.
-
-2. **Frame 2-11 (within 0.35s):**
-   - Pair remains in contact, but cooldown blocks repeated damage.
-   - Movement can bring them apart due to impulse.
-
-3. **Frame 12+ (after 0.35s):**
-   - If still colliding, damage resolves again.
-   - Both take 1 damage: Anti1 health→0 (dies), Wind1 health→0 (dies).
-   - Both become dead immediately:
-     - `is_dead=true` for both.
-     - Collision layers disabled for both.
-     - Brain cleanup called for both.
-   - Both are queued for freeing, but dead state prevents further collisions/damage.
-
-## Lifeform Sound Effects (Implemented)
-- Each lifeform has two audio nodes:
-  - `DeathSound`: Plays when lifeform dies (health reaches 0).
-  - `CollisionSound`: Plays when lifeform collides with another lifeform during combat.
-- Sound nodes are instances of `AudioStreamPlayer3D` with assigned audio streams (e.g., `res://assets/sounds/Death.wav`, `res://assets/sounds/Combat_collision.wav`).
-
-### Death Sound (Implemented)
-- Triggered by `_play_death_sound()` when lifeform enters the `die()` state.
-- Sound is reparented to the current scene so it continues playing even after the lifeform is freed.
-- Sound position is set to the lifeform's position at time of death.
-- After sound finishes playing plus a 0.25s buffer, the sound node is freed.
-
-### Collision Sound (Implemented)
-- Triggered by `_play_collision_sound(collision_point)` when two lifeforms collide during combat.
-- A duplicate of the `CollisionSound` node is created (to allow multiple collision sounds simultaneously).
-- Sound is positioned at the collision point in world space.
-- After sound finishes playing plus a 0.25s buffer, the duplicated sound node is freed.
-- This creates an immersive audio feedback for combat interactions without blocking other sounds.
+## World Camera
+- `camera_free_fly.gd` provides observer-camera movement.
+- Controls:
+  - Move: `W A S D`
+  - Vertical: `Space` up, `Shift` down
+  - Sprint: `Ctrl`
+  - Mouse look when captured
+  - `Esc`: release mouse
+  - `Tab`: capture mouse
 
 ## What Is Not Implemented Yet
-
-- **Population Tracking / Win Conditions:** Faction counts, dominant element detection, simulation end state.
-- **HUD / Debug Visualization:** Energy bars, health indicators, stat display.
-- **Advanced Combat:** Energy consumption on attacks, leveled attack power scaling.
-- **Advanced Environment Navigation:** More precise ground-aware placement, nav/pathfinding, or obstacle-aware target selection.
-- **Advanced Evolution Visuals:** Distinct authored meshes/models for level-2 and level-3 elemental evolutions.
-- **Evolution Sounds:** Audio for lifeform merging and level-up events.
+- Explicit win condition or simulation end state.
+- Health/energy bars above individual lifeforms.
+- Advanced combat tuning such as energy consumption per attack or richer level-based attack scaling.
+- Advanced pathfinding or obstacle-aware target selection beyond steering avoidance and spawn checks.
+- Authored/imported custom level-2 and level-3 creature models.
+- More polished assignment deliverables such as final demo video, screenshots, and README submission notes.
